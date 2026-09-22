@@ -1,5 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { UserProfile, WorkoutSession, WorkoutSessionSummary } from '../types';
+import { computeSessionSummary, MonitoringSessionKind } from '../utils/monitoringStats';
+
+export type { MonitoringSessionKind } from '../utils/monitoringStats';
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -287,8 +290,6 @@ export async function listMonitoringMinutesBetween(fromMs: number, toMs: number)
   return rows.map(rowToMonitoringMinute);
 }
 
-export type MonitoringSessionKind = 'sleep' | 'day';
-
 export interface MonitoringSession {
   id: string;
   startedAt: number;
@@ -338,19 +339,6 @@ export async function createMonitoringSession(id: string, startedAt: number): Pr
   await db.runAsync('INSERT INTO monitoring_sessions (id, started_at) VALUES (?, ?)', [id, startedAt]);
 }
 
-function classifyKind(startedAt: number, endedAt: number): MonitoringSessionKind {
-  const durationHours = (endedAt - startedAt) / 3600000;
-  const midHour = new Date((startedAt + endedAt) / 2).getHours();
-  const overlapsNight = midHour >= 22 || midHour < 10;
-  return durationHours >= 2 && overlapsNight ? 'sleep' : 'day';
-}
-
-function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0;
-  const idx = Math.min(sorted.length - 1, Math.floor(p * sorted.length));
-  return sorted[idx];
-}
-
 export async function finalizeMonitoringSession(id: string, endedAt: number): Promise<void> {
   const db = await getDb();
   const session = await db.getFirstAsync<MonitoringSessionRow>(
@@ -360,34 +348,7 @@ export async function finalizeMonitoringSession(id: string, endedAt: number): Pr
   if (!session) return;
 
   const minutes = await listMonitoringMinutesBetween(session.started_at, endedAt);
-
-  let weightedSum = 0;
-  let totalSamples = 0;
-  let min = Infinity;
-  let max = -Infinity;
-  let hrvSum = 0;
-  let hrvCount = 0;
-  let hasRr = false;
-  const avgList: number[] = [];
-
-  for (const m of minutes) {
-    weightedSum += m.avgBpm * m.sampleCount;
-    totalSamples += m.sampleCount;
-    min = Math.min(min, m.minBpm);
-    max = Math.max(max, m.maxBpm);
-    avgList.push(m.avgBpm);
-    if (m.avgHrvMs != null) {
-      hrvSum += m.avgHrvMs;
-      hrvCount += 1;
-    }
-    if (m.rrCount > 0) hasRr = true;
-  }
-
-  avgList.sort((a, b) => a - b);
-  const avgBpm = totalSamples > 0 ? Math.round(weightedSum / totalSamples) : null;
-  const restingBpm = avgList.length > 0 ? percentile(avgList, 0.05) : null;
-  const avgHrvMs = hrvCount > 0 ? Math.round(hrvSum / hrvCount) : null;
-  const kind = classifyKind(session.started_at, endedAt);
+  const summary = computeSessionSummary(minutes, session.started_at, endedAt);
 
   await db.runAsync(
     `UPDATE monitoring_sessions SET ended_at = $end, kind = $kind, avg_bpm = $avg, min_bpm = $min,
@@ -396,14 +357,14 @@ export async function finalizeMonitoringSession(id: string, endedAt: number): Pr
     {
       $id: id,
       $end: endedAt,
-      $kind: kind,
-      $avg: avgBpm,
-      $min: min === Infinity ? null : min,
-      $max: max === -Infinity ? null : max,
-      $resting: restingBpm,
-      $minutes: minutes.length,
-      $hrv: avgHrvMs,
-      $hasRr: hasRr ? 1 : 0,
+      $kind: summary.kind,
+      $avg: summary.avgBpm,
+      $min: summary.minBpm,
+      $max: summary.maxBpm,
+      $resting: summary.restingBpm,
+      $minutes: summary.minutesTracked,
+      $hrv: summary.avgHrvMs,
+      $hasRr: summary.hasRr ? 1 : 0,
     },
   );
 }

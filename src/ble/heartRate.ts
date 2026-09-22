@@ -1,5 +1,9 @@
 import { PermissionsAndroid, Platform } from 'react-native';
 import { BleError, BleManager, Device, State, Subscription } from 'react-native-ble-plx';
+import { base64ToBytes, HeartRateSample, parseHeartRateMeasurement } from './hrParser';
+
+export { parseHeartRateMeasurement } from './hrParser';
+export type { HeartRateSample } from './hrParser';
 
 export const HEART_RATE_SERVICE_UUID = '0000180d-0000-1000-8000-00805f9b34fb';
 export const HEART_RATE_MEASUREMENT_UUID = '00002a37-0000-1000-8000-00805f9b34fb';
@@ -11,59 +15,6 @@ export const BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
 // on every hot reload leaks them until "Too many receivers" (1000 limit).
 const bleManagerRef = globalThis as unknown as { __bleManager?: BleManager };
 const manager = bleManagerRef.__bleManager ?? (bleManagerRef.__bleManager = new BleManager());
-
-function base64ToBytes(base64: string): Uint8Array {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const clean = base64.replace(/=+$/, '');
-  const bytes: number[] = [];
-  let buffer = 0;
-  let bits = 0;
-  for (const char of clean) {
-    const value = chars.indexOf(char);
-    if (value === -1) continue;
-    buffer = (buffer << 6) | value;
-    bits += 6;
-    if (bits >= 8) {
-      bits -= 8;
-      bytes.push((buffer >> bits) & 0xff);
-    }
-  }
-  return Uint8Array.from(bytes);
-}
-
-export interface HeartRateSample {
-  bpm: number;
-  rr: number[]; // RR-intervals in ms, empty if the sensor does not send them
-}
-
-export function parseHeartRateMeasurement(base64Value: string): HeartRateSample {
-  const bytes = base64ToBytes(base64Value);
-  const flags = bytes[0];
-
-  let offset: number;
-  let bpm: number;
-  if ((flags & 0x01) === 1) {
-    bpm = bytes[1] | (bytes[2] << 8);
-    offset = 3;
-  } else {
-    bpm = bytes[1];
-    offset = 2;
-  }
-
-  if ((flags & 0x08) !== 0) {
-    offset += 2; // Energy Expended field present
-  }
-
-  const rr: number[] = [];
-  if ((flags & 0x10) !== 0) {
-    for (let i = offset; i + 1 < bytes.length; i += 2) {
-      const raw = bytes[i] | (bytes[i + 1] << 8);
-      rr.push(Math.round((raw / 1024) * 1000));
-    }
-  }
-
-  return { bpm, rr };
-}
 
 export async function requestBlePermissions(): Promise<boolean> {
   if (Platform.OS !== 'android') return true;
