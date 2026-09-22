@@ -124,9 +124,13 @@ export function MonitoringScreen({ navigation }: Props) {
 
   const handleStop = async () => {
     setBusy(true);
+    const finishedSessionId = useMonitoringStore.getState().sessionId;
     try {
       await stopMonitoring();
       refreshToday();
+      if (finishedSessionId) {
+        navigation.navigate('MonitoringSession', { sessionId: finishedSessionId });
+      }
     } finally {
       setBusy(false);
     }

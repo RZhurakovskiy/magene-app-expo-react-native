@@ -2,10 +2,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActiveWorkoutScreen } from '../screens/ActiveWorkoutScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { HomeScreen } from '../screens/HomeScreen';
-import { MonitoringDayScreen } from '../screens/MonitoringDayScreen';
 import { MonitoringHistoryScreen } from '../screens/MonitoringHistoryScreen';
 import { MonitoringOnboardingScreen } from '../screens/MonitoringOnboardingScreen';
 import { MonitoringScreen } from '../screens/MonitoringScreen';
+import { MonitoringSessionScreen } from '../screens/MonitoringSessionScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ScanDeviceScreen } from '../screens/ScanDeviceScreen';
 import { SessionDetailsScreen } from '../screens/SessionDetailsScreen';
@@ -29,7 +29,7 @@ export function RootNavigator() {
       <Stack.Screen name="Monitoring" component={MonitoringScreen} />
       <Stack.Screen name="MonitoringOnboarding" component={MonitoringOnboardingScreen} />
       <Stack.Screen name="MonitoringHistory" component={MonitoringHistoryScreen} />
-      <Stack.Screen name="MonitoringDay" component={MonitoringDayScreen} />
+      <Stack.Screen name="MonitoringSession" component={MonitoringSessionScreen} />
     </Stack.Navigator>
   );
 }

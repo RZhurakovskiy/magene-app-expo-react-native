@@ -25,11 +25,11 @@ export async function connectAndSubscribe(deviceId: string, deviceName: string):
 
   subscribeToHeartRate(
     device,
-    (bpm) => {
+    ({ bpm, rr }) => {
       if (bpm < MIN_VALID_BPM) return;
       lastSampleAt = Date.now();
       useSessionStore.getState().addHrSample(bpm);
-      useMonitoringStore.getState().onSample(bpm);
+      useMonitoringStore.getState().onSample(bpm, rr);
     },
     () => handleDisconnected(deviceId, deviceName),
   );

@@ -4,22 +4,22 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { listMonitoringDays, MonitoringDaySummary } from '../db/database';
+import { listMonitoringSessions, MonitoringSession } from '../db/database';
 import { useBiometricGate } from '../hooks/useBiometricGate';
 import { RootStackParamList } from '../navigation/types';
 import { colors, radii, spacing } from '../theme';
-import { formatSessionDate } from '../utils/format';
+import { formatDuration, formatSessionDateTime } from '../utils/format';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MonitoringHistory'>;
 
 export function MonitoringHistoryScreen({ navigation }: Props) {
   const unlocked = useBiometricGate();
-  const [days, setDays] = useState<MonitoringDaySummary[]>([]);
+  const [sessions, setSessions] = useState<MonitoringSession[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       if (!unlocked) return;
-      listMonitoringDays().then(setDays);
+      listMonitoringSessions().then(setSessions);
     }, [unlocked]),
   );
 
@@ -36,27 +36,36 @@ export function MonitoringHistoryScreen({ navigation }: Props) {
       </View>
 
       <FlatList
-        data={days}
-        keyExtractor={(item) => String(item.dayTs)}
+        data={sessions}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={{ gap: spacing.sm }}
-        ListEmptyComponent={<Text style={styles.empty}>Пока нет данных мониторинга</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.row}
-            onPress={() => navigation.navigate('MonitoringDay', { dayTs: item.dayTs })}
-          >
-            <View style={styles.iconWrap}>
-              <Ionicons name="pulse" size={18} color={colors.accentStart} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.rowTitle}>{formatSessionDate(item.dayTs)}</Text>
-              <Text style={styles.rowSubtitle}>
-                средний {item.avgBpm} · {item.minBpm}–{item.maxBpm} уд/мин · {item.minutesTracked} мин
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-        )}
+        ListEmptyComponent={<Text style={styles.empty}>Пока нет сессий мониторинга</Text>}
+        renderItem={({ item }) => {
+          const isSleep = item.kind === 'sleep';
+          const durationSec = item.endedAt ? Math.round((item.endedAt - item.startedAt) / 1000) : 0;
+          return (
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => navigation.navigate('MonitoringSession', { sessionId: item.id })}
+            >
+              <View style={styles.iconWrap}>
+                <Ionicons name={isSleep ? 'moon' : 'pulse'} size={18} color={colors.accentStart} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rowTitle}>
+                  {isSleep ? 'Сон' : 'Мониторинг'} · {formatSessionDateTime(item.startedAt)}
+                </Text>
+                <Text style={styles.rowSubtitle}>
+                  {formatDuration(durationSec)}
+                  {item.avgBpm != null ? ` · средний ${item.avgBpm}` : ''}
+                  {item.restingBpm != null ? ` · покой ${item.restingBpm}` : ''}
+                  {item.hasRr && item.avgHrvMs != null ? ` · HRV ${item.avgHrvMs} мс` : ''}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          );
+        }}
       />
     </SafeAreaView>
   );

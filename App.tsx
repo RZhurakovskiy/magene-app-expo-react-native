@@ -5,7 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import './src/location/backgroundLocation';
 import './src/monitoring/foregroundService';
-import { initDatabase } from './src/db/database';
+import { closeDanglingSessions, initDatabase } from './src/db/database';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useProfileStore } from './src/store/profileStore';
 import { useSessionStore } from './src/store/sessionStore';
@@ -23,7 +23,7 @@ export default function App() {
 
   useEffect(() => {
     initDatabase()
-      .then(() => Promise.all([loadProfile(), loadLastKnownDevice()]))
+      .then(() => Promise.all([loadProfile(), loadLastKnownDevice(), closeDanglingSessions().catch(() => {})]))
       .finally(() => setReady(true));
   }, [loadProfile, loadLastKnownDevice]);
 

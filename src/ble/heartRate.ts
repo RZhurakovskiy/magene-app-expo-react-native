@@ -31,14 +31,38 @@ function base64ToBytes(base64: string): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
-export function parseHeartRateMeasurement(base64Value: string): number {
+export interface HeartRateSample {
+  bpm: number;
+  rr: number[]; // RR-intervals in ms, empty if the sensor does not send them
+}
+
+export function parseHeartRateMeasurement(base64Value: string): HeartRateSample {
   const bytes = base64ToBytes(base64Value);
   const flags = bytes[0];
-  const isUint16 = (flags & 0x1) === 1;
-  if (isUint16) {
-    return bytes[1] | (bytes[2] << 8);
+
+  let offset: number;
+  let bpm: number;
+  if ((flags & 0x01) === 1) {
+    bpm = bytes[1] | (bytes[2] << 8);
+    offset = 3;
+  } else {
+    bpm = bytes[1];
+    offset = 2;
   }
-  return bytes[1];
+
+  if ((flags & 0x08) !== 0) {
+    offset += 2; // Energy Expended field present
+  }
+
+  const rr: number[] = [];
+  if ((flags & 0x10) !== 0) {
+    for (let i = offset; i + 1 < bytes.length; i += 2) {
+      const raw = bytes[i] | (bytes[i + 1] << 8);
+      rr.push(Math.round((raw / 1024) * 1000));
+    }
+  }
+
+  return { bpm, rr };
 }
 
 export async function requestBlePermissions(): Promise<boolean> {
@@ -95,7 +119,7 @@ export async function connectToDevice(deviceId: string): Promise<Device> {
 
 export function subscribeToHeartRate(
   device: Device,
-  onSample: (bpm: number) => void,
+  onSample: (sample: HeartRateSample) => void,
   onDisconnected: () => void,
 ): Subscription {
   device.onDisconnected(() => onDisconnected());

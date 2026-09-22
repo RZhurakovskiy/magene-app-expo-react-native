@@ -12,5 +12,5 @@ export type RootStackParamList = {
   Monitoring: undefined;
   MonitoringOnboarding: undefined;
   MonitoringHistory: undefined;
-  MonitoringDay: { dayTs: number };
+  MonitoringSession: { sessionId: string };
 };
