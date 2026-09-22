@@ -40,6 +40,7 @@ yarn-error.*
 /ios
 /android
 
-# Claude Code local session config
+# Claude Code / agent local config
 .claude/
 CLAUDE.md
+AGENTS.md
