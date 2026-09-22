@@ -2,14 +2,16 @@ import { Device } from 'react-native-ble-plx';
 import { saveKnownDevice } from '../db/database';
 import { useMonitoringStore } from '../store/monitoringStore';
 import { useSessionStore } from '../store/sessionStore';
-import { connectToDevice, subscribeToHeartRate } from './heartRate';
+import { connectToDevice, disconnectDevice, subscribeToHeartRate } from './heartRate';
 
-const MAX_RECONNECT_ATTEMPTS = 6;
+const MIN_VALID_BPM = 20;
 
 let activeDevice: Device | null = null;
+let currentTarget: { id: string; name: string } | null = null;
+let lastSampleAt = 0;
 
-function isMonitoringActive(): boolean {
-  return useMonitoringStore.getState().status !== 'idle';
+function isSensorNeeded(): boolean {
+  return useSessionStore.getState().activeWorkout !== null || useMonitoringStore.getState().status !== 'idle';
 }
 
 export async function connectAndSubscribe(deviceId: string, deviceName: string): Promise<void> {
@@ -18,10 +20,14 @@ export async function connectAndSubscribe(deviceId: string, deviceName: string):
 
   const device = await connectToDevice(deviceId);
   activeDevice = device;
+  currentTarget = { id: deviceId, name: deviceName };
+  lastSampleAt = Date.now();
 
   subscribeToHeartRate(
     device,
     (bpm) => {
+      if (bpm < MIN_VALID_BPM) return;
+      lastSampleAt = Date.now();
       useSessionStore.getState().addHrSample(bpm);
       useMonitoringStore.getState().onSample(bpm);
     },
@@ -39,7 +45,7 @@ function handleDisconnected(deviceId: string, deviceName: string) {
   activeDevice = null;
   store.setConnectedDevice(null);
 
-  if (store.activeWorkout || isMonitoringActive()) {
+  if (isSensorNeeded()) {
     attemptReconnect(deviceId, deviceName, 1);
   } else {
     store.setConnectionStatus('disconnected');
@@ -47,22 +53,41 @@ function handleDisconnected(deviceId: string, deviceName: string) {
 }
 
 function attemptReconnect(deviceId: string, deviceName: string, attempt: number) {
-  const store = useSessionStore.getState();
-  store.setConnectionStatus('reconnecting');
+  if (!isSensorNeeded()) {
+    useSessionStore.getState().setConnectionStatus('disconnected');
+    return;
+  }
+  useSessionStore.getState().setConnectionStatus('reconnecting');
 
   const delayMs = Math.min(1000 * attempt, 5000);
   setTimeout(async () => {
+    if (!isSensorNeeded()) {
+      useSessionStore.getState().setConnectionStatus('disconnected');
+      return;
+    }
     try {
       await connectAndSubscribe(deviceId, deviceName);
     } catch {
-      const stillNeeded = useSessionStore.getState().activeWorkout || isMonitoringActive();
-      if (attempt < MAX_RECONNECT_ATTEMPTS && stillNeeded) {
-        attemptReconnect(deviceId, deviceName, attempt + 1);
-      } else {
-        useSessionStore.getState().setConnectionStatus('disconnected');
-      }
+      attemptReconnect(deviceId, deviceName, attempt + 1);
     }
   }, delayMs);
+}
+
+// Catches "silent" BLE drops where onDisconnected never fires: if we believe we're
+// connected but no valid sample has arrived for staleMs, force a reconnect cycle.
+export async function recoverIfStale(staleMs: number): Promise<void> {
+  if (!isSensorNeeded() || !currentTarget) return;
+  if (useSessionStore.getState().connectionStatus !== 'connected') return;
+  if (Date.now() - lastSampleAt < staleMs) return;
+
+  const target = currentTarget;
+  const dying = activeDevice;
+  activeDevice = null;
+  useSessionStore.getState().setConnectionStatus('reconnecting');
+  if (dying) {
+    await Promise.race([disconnectDevice(dying.id).catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
+  }
+  attemptReconnect(target.id, target.name, 1);
 }
 
 export function getActiveDevice(): Device | null {

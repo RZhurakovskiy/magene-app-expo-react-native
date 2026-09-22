@@ -161,6 +161,16 @@ export function MonitoringScreen({ navigation }: Props) {
         <Text style={styles.statusText}>{statusLabel}</Text>
       </View>
 
+      {status !== 'idle' && connectionStatus !== 'connected' && (
+        <Text style={styles.connBanner}>
+          {connectionStatus === 'reconnecting'
+            ? 'Датчик потерян — переподключаемся…'
+            : connectionStatus === 'connecting'
+              ? 'Подключение к датчику…'
+              : 'Датчик отключён'}
+        </Text>
+      )}
+
       <View style={styles.bpmBlock}>
         <Text style={[styles.bpmValue, { color: zoneColor }]}>{currentBpm ?? '--'}</Text>
         <Text style={styles.bpmUnit}>УД/МИН</Text>
@@ -233,6 +243,12 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
+  },
+  connBanner: {
+    color: colors.accentStart,
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   bpmBlock: {
     alignItems: 'center',

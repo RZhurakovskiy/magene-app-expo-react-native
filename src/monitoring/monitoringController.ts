@@ -1,3 +1,4 @@
+import { recoverIfStale } from '../ble/connectionManager';
 import { useMonitoringStore } from '../store/monitoringStore';
 import {
   requestNotificationPermission,
@@ -6,12 +7,19 @@ import {
   updateMonitoringNotification,
 } from './foregroundService';
 
-let notificationTimer: ReturnType<typeof setInterval> | null = null;
+const STALE_SAMPLE_MS = 20000;
 
-function clearTimer(): void {
+let notificationTimer: ReturnType<typeof setInterval> | null = null;
+let watchdogTimer: ReturnType<typeof setInterval> | null = null;
+
+function clearTimers(): void {
   if (notificationTimer) {
     clearInterval(notificationTimer);
     notificationTimer = null;
+  }
+  if (watchdogTimer) {
+    clearInterval(watchdogTimer);
+    watchdogTimer = null;
   }
 }
 
@@ -29,11 +37,15 @@ export async function startMonitoring(): Promise<boolean> {
     await startMonitoringForegroundService(useMonitoringStore.getState().currentBpm);
     useMonitoringStore.getState().start();
 
-    clearTimer();
+    clearTimers();
     notificationTimer = setInterval(() => {
       if (useMonitoringStore.getState().status === 'idle') return;
       updateMonitoringNotification(notificationBody()).catch(() => {});
     }, 30000);
+    watchdogTimer = setInterval(() => {
+      if (useMonitoringStore.getState().status !== 'active') return;
+      recoverIfStale(STALE_SAMPLE_MS).catch(() => {});
+    }, 10000);
 
     return true;
   } catch {
@@ -52,7 +64,7 @@ export function resumeMonitoring(): void {
 }
 
 export async function stopMonitoring(): Promise<void> {
-  clearTimer();
+  clearTimers();
   await useMonitoringStore.getState().stop();
   await stopMonitoringForegroundService().catch(() => {});
 }
