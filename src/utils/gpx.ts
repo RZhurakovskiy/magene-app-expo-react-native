@@ -5,7 +5,7 @@ function escapeXml(value: string): string {
 }
 
 export function buildGpx(session: WorkoutSession): string {
-  const name = `Pulse — ${new Date(session.startedAt).toISOString()}`;
+  const name = `LiveBeat — ${new Date(session.startedAt).toISOString()}`;
   const points = (session.route ?? [])
     .map(
       (point) =>
@@ -16,7 +16,7 @@ export function buildGpx(session: WorkoutSession): string {
     .join('\n');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Pulse" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="LiveBeat" xmlns="http://www.topografix.com/GPX/1/1">
   <trk>
     <name>${escapeXml(name)}</name>
     <trkseg>
@@ -29,5 +29,5 @@ ${points}
 
 export function gpxFileName(session: WorkoutSession): string {
   const date = new Date(session.startedAt).toISOString().replace(/[:.]/g, '-');
-  return `pulse-${date}.gpx`;
+  return `livebeat-${date}.gpx`;
 }

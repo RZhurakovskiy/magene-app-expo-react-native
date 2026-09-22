@@ -23,7 +23,7 @@ function stepsForFamily(family: ReturnType<typeof detectOemFamily>): Step[] {
     return [
       {
         title: '1. Автозапуск',
-        body: 'Включи автозапуск для Pulse — иначе система закроет приложение через несколько минут после блокировки экрана.',
+        body: 'Включи автозапуск для LiveBeat — иначе система закроет приложение через несколько минут после блокировки экрана.',
         action: { label: 'Открыть автозапуск', run: () => void openAutoStartSettings() },
       },
       {

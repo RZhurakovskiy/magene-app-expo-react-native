@@ -81,7 +81,7 @@ export function HomeScreen({ navigation }: Props) {
       <View style={styles.header}>
         <View style={styles.brand}>
           <Ionicons name="heart" size={22} color={colors.accentStart} />
-          <Text style={styles.brandText}>PULSE</Text>
+          <Text style={styles.brandText}>LIVEBEAT</Text>
         </View>
         <View style={styles.headerIcons}>
           <TouchableOpacity onPress={() => navigation.navigate('Stats')}>

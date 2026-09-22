@@ -37,7 +37,7 @@ export async function startOutdoorTracking(): Promise<void> {
     distanceInterval: 5,
     showsBackgroundLocationIndicator: true,
     foregroundService: {
-      notificationTitle: 'Pulse записывает тренировку',
+      notificationTitle: 'LiveBeat записывает тренировку',
       notificationBody: 'Отслеживание маршрута на улице активно',
     },
   });
