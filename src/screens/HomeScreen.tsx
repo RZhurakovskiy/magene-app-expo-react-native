@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectAndSubscribe } from '../ble/connectionManager';
 import { GradientButton } from '../components/GradientButton';
@@ -96,6 +96,7 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       </View>
 
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
       {!profile && (
         <TouchableOpacity style={styles.profileHint} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="information-circle-outline" size={18} color={colors.accentStart} />
@@ -136,7 +137,7 @@ export function HomeScreen({ navigation }: Props) {
         </>
       )}
 
-      <View style={{ flex: 1 }} />
+      <View style={styles.spacer} />
 
       <GradientButton
         label="Начать тренировку"
@@ -145,6 +146,22 @@ export function HomeScreen({ navigation }: Props) {
         loading={starting}
       />
       {!isConnected && <Text style={styles.hint}>Подключите пульсометр, чтобы начать</Text>}
+
+      <TouchableOpacity
+        style={styles.monitoringCard}
+        activeOpacity={0.85}
+        onPress={() => navigation.navigate('Monitoring')}
+      >
+        <View style={styles.monitoringIcon}>
+          <Ionicons name="pulse" size={20} color={colors.accentStart} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.monitoringTitle}>Суточный мониторинг</Text>
+          <Text style={styles.monitoringSubtitle}>Отслеживать пульс весь день в фоне</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+      </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -156,6 +173,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  spacer: {
+    flexGrow: 1,
+    minHeight: spacing.xl,
+  },
+  monitoringCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+    marginTop: spacing.lg,
+  },
+  monitoringIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monitoringTitle: {
+    color: colors.textPrimary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  monitoringSubtitle: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
   },
   header: {
     flexDirection: 'row',

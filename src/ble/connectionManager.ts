@@ -1,11 +1,16 @@
 import { Device } from 'react-native-ble-plx';
 import { saveKnownDevice } from '../db/database';
+import { useMonitoringStore } from '../store/monitoringStore';
 import { useSessionStore } from '../store/sessionStore';
 import { connectToDevice, subscribeToHeartRate } from './heartRate';
 
 const MAX_RECONNECT_ATTEMPTS = 6;
 
 let activeDevice: Device | null = null;
+
+function isMonitoringActive(): boolean {
+  return useMonitoringStore.getState().status !== 'idle';
+}
 
 export async function connectAndSubscribe(deviceId: string, deviceName: string): Promise<void> {
   const store = useSessionStore.getState();
@@ -16,7 +21,10 @@ export async function connectAndSubscribe(deviceId: string, deviceName: string):
 
   subscribeToHeartRate(
     device,
-    (bpm) => useSessionStore.getState().addHrSample(bpm),
+    (bpm) => {
+      useSessionStore.getState().addHrSample(bpm);
+      useMonitoringStore.getState().onSample(bpm);
+    },
     () => handleDisconnected(deviceId, deviceName),
   );
 
@@ -31,7 +39,7 @@ function handleDisconnected(deviceId: string, deviceName: string) {
   activeDevice = null;
   store.setConnectedDevice(null);
 
-  if (store.activeWorkout) {
+  if (store.activeWorkout || isMonitoringActive()) {
     attemptReconnect(deviceId, deviceName, 1);
   } else {
     store.setConnectionStatus('disconnected');
@@ -47,7 +55,8 @@ function attemptReconnect(deviceId: string, deviceName: string, attempt: number)
     try {
       await connectAndSubscribe(deviceId, deviceName);
     } catch {
-      if (attempt < MAX_RECONNECT_ATTEMPTS && useSessionStore.getState().activeWorkout) {
+      const stillNeeded = useSessionStore.getState().activeWorkout || isMonitoringActive();
+      if (attempt < MAX_RECONNECT_ATTEMPTS && stillNeeded) {
         attemptReconnect(deviceId, deviceName, attempt + 1);
       } else {
         useSessionStore.getState().setConnectionStatus('disconnected');

@@ -6,8 +6,8 @@
     </linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="#0B0B10"/>
-  <g transform="translate(112,146) scale(25)">
+  <g transform="translate(112,121) scale(25)">
     <path d="M16 29.27l-1.45-1.32C6.4 21.36 1 16.28 1 10.5 1 5.42 4.42 2 9.5 2c2.54 0 5.02 1.19 6.5 3.09C17.48 3.19 19.96 2 22.5 2 27.58 2 31 5.42 31 10.5c0 5.78-5.4 10.86-13.55 17.45L16 29.27z" fill="url(#heartGrad)"/>
   </g>
-  <path d="M232,548 L372,548 L420,404 L480,656 L540,452 L600,580 L660,548 L792,548" fill="none" stroke="#0B0B10" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M210,512 L350,512 L400,368 L460,620 L520,416 L580,544 L640,512 L814,512" fill="none" stroke="#0B0B10" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
 </svg>

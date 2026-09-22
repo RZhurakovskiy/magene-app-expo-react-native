@@ -39,6 +39,17 @@ export async function initDatabase(): Promise<void> {
       device_id TEXT NOT NULL,
       device_name TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS monitoring_minutes (
+      minute_ts INTEGER PRIMARY KEY NOT NULL,
+      avg_bpm INTEGER NOT NULL,
+      min_bpm INTEGER NOT NULL,
+      max_bpm INTEGER NOT NULL,
+      sample_count INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS app_flags (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
   `);
 
   try {
@@ -46,6 +57,20 @@ export async function initDatabase(): Promise<void> {
   } catch {
     // column already exists
   }
+}
+
+export async function getFlag(key: string): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ value: string }>('SELECT value FROM app_flags WHERE key = ?', [key]);
+  return row?.value ?? null;
+}
+
+export async function setFlag(key: string, value: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    'INSERT INTO app_flags (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = $value',
+    { $key: key, $value: value },
+  );
 }
 
 export interface KnownDeviceRecord {
@@ -177,4 +202,94 @@ export async function listSessionsSince(sinceMs: number): Promise<WorkoutSession
     [sinceMs],
   );
   return rows.map(rowToSession);
+}
+
+export interface MonitoringMinute {
+  minuteTs: number;
+  avgBpm: number;
+  minBpm: number;
+  maxBpm: number;
+  sampleCount: number;
+}
+
+export async function insertMonitoringMinute(minute: MonitoringMinute): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT INTO monitoring_minutes (minute_ts, avg_bpm, min_bpm, max_bpm, sample_count)
+     VALUES ($ts, $avg, $min, $max, $count)
+     ON CONFLICT(minute_ts) DO UPDATE SET avg_bpm = $avg, min_bpm = $min, max_bpm = $max, sample_count = $count`,
+    { $ts: minute.minuteTs, $avg: minute.avgBpm, $min: minute.minBpm, $max: minute.maxBpm, $count: minute.sampleCount },
+  );
+}
+
+interface MonitoringRow {
+  minute_ts: number;
+  avg_bpm: number;
+  min_bpm: number;
+  max_bpm: number;
+  sample_count: number;
+}
+
+function rowToMonitoringMinute(row: MonitoringRow): MonitoringMinute {
+  return {
+    minuteTs: row.minute_ts,
+    avgBpm: row.avg_bpm,
+    minBpm: row.min_bpm,
+    maxBpm: row.max_bpm,
+    sampleCount: row.sample_count,
+  };
+}
+
+export async function listMonitoringMinutesBetween(fromMs: number, toMs: number): Promise<MonitoringMinute[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<MonitoringRow>(
+    'SELECT * FROM monitoring_minutes WHERE minute_ts >= ? AND minute_ts < ? ORDER BY minute_ts ASC',
+    [fromMs, toMs],
+  );
+  return rows.map(rowToMonitoringMinute);
+}
+
+export interface MonitoringDaySummary {
+  dayTs: number;
+  avgBpm: number;
+  minBpm: number;
+  maxBpm: number;
+  minutesTracked: number;
+}
+
+export async function listMonitoringDays(): Promise<MonitoringDaySummary[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<MonitoringRow>('SELECT * FROM monitoring_minutes ORDER BY minute_ts ASC');
+  const byDay = new Map<number, MonitoringRow[]>();
+
+  for (const row of rows) {
+    const date = new Date(row.minute_ts);
+    date.setHours(0, 0, 0, 0);
+    const dayTs = date.getTime();
+    if (!byDay.has(dayTs)) byDay.set(dayTs, []);
+    byDay.get(dayTs)!.push(row);
+  }
+
+  const days: MonitoringDaySummary[] = [];
+  for (const [dayTs, dayRows] of byDay) {
+    let weightedSum = 0;
+    let totalSamples = 0;
+    let min = Infinity;
+    let max = -Infinity;
+    for (const r of dayRows) {
+      weightedSum += r.avg_bpm * r.sample_count;
+      totalSamples += r.sample_count;
+      min = Math.min(min, r.min_bpm);
+      max = Math.max(max, r.max_bpm);
+    }
+    days.push({
+      dayTs,
+      avgBpm: totalSamples > 0 ? Math.round(weightedSum / totalSamples) : 0,
+      minBpm: min === Infinity ? 0 : min,
+      maxBpm: max === -Infinity ? 0 : max,
+      minutesTracked: dayRows.length,
+    });
+  }
+
+  return days.sort((a, b) => b.dayTs - a.dayTs);
 }

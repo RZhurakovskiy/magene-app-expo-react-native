@@ -9,4 +9,8 @@ export type RootStackParamList = {
   SessionDetails: { sessionId: string };
   Profile: undefined;
   Stats: undefined;
+  Monitoring: undefined;
+  MonitoringOnboarding: undefined;
+  MonitoringHistory: undefined;
+  MonitoringDay: { dayTs: number };
 };
