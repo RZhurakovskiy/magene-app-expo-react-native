@@ -6,7 +6,11 @@ export const HEART_RATE_MEASUREMENT_UUID = '00002a37-0000-1000-8000-00805f9b34fb
 export const BATTERY_SERVICE_UUID = '0000180f-0000-1000-8000-00805f9b34fb';
 export const BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb';
 
-const manager = new BleManager();
+// Reuse one BleManager across Fast Refresh reloads. Each `new BleManager()`
+// registers Android BroadcastReceivers (adapter/location state); recreating it
+// on every hot reload leaks them until "Too many receivers" (1000 limit).
+const bleManagerRef = globalThis as unknown as { __bleManager?: BleManager };
+const manager = bleManagerRef.__bleManager ?? (bleManagerRef.__bleManager = new BleManager());
 
 function base64ToBytes(base64: string): Uint8Array {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';

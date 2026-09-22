@@ -26,12 +26,22 @@ jobs:
       - name: Prebuild native Android project
         run: npx expo prebuild --platform android --clean
 
-      - name: Build debug APK
+      - name: Build dev-client APK (needs Metro / expo start)
         working-directory: android
         run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a
 
-      - name: Upload APK
+      - name: Build standalone APK (JS bundled, runs without a PC)
+        working-directory: android
+        run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a
+
+      - name: Upload dev-client APK
         uses: actions/upload-artifact@v4
         with:
-          name: pulse-dev-client-apk
+          name: livebeat-devclient-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload standalone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: livebeat-standalone-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
