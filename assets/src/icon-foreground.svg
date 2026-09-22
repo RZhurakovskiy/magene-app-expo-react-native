@@ -1,0 +1,12 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8A3D"/>
+      <stop offset="100%" stop-color="#FF3B5C"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(280,344) scale(15.5)">
+    <path d="M16 29.27l-1.45-1.32C6.4 21.36 1 16.28 1 10.5 1 5.42 4.42 2 9.5 2c2.54 0 5.02 1.19 6.5 3.09C17.48 3.19 19.96 2 22.5 2 27.58 2 31 5.42 31 10.5c0 5.78-5.4 10.86-13.55 17.45L16 29.27z" fill="url(#heartGrad)"/>
+  </g>
+  <path d="M394,565 L474,565 L502,478 L540,632 L578,502 L616,573 L654,565 L734,565" fill="none" stroke="#0B0B10" stroke-width="17" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

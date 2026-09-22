@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "Pulse",
+    "slug": "magene-tracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pulsetracker.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.pulsetracker.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Приложению нужен доступ к Bluetooth для подключения к нагрудному пульсометру."
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Приложению нужен доступ к геолокации, чтобы записывать маршрут пробежки на улице.",
+          "locationWhenInUsePermission": "Приложению нужен доступ к геолокации, чтобы записывать маршрут пробежки на улице.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Разблокируйте историю тренировок с помощью Face ID."
+        }
+      ],
+      "expo-font",
+      "@maplibre/maplibre-react-native",
+      "expo-sharing"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cd2bd10e-6ebb-42a9-a87d-1e25963e93c2"
+      }
+    }
+  }
+}

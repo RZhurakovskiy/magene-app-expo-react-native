@@ -1,0 +1,145 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useCallback, useMemo, useState } from 'react';
+import { SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { listSessionSummaries } from '../db/database';
+import { useBiometricGate } from '../hooks/useBiometricGate';
+import { RootStackParamList } from '../navigation/types';
+import { colors, radii, spacing } from '../theme';
+import { WorkoutSessionSummary } from '../types';
+import { formatDistanceKm, formatDuration, formatMonthYear, formatSessionDate } from '../utils/format';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'History'>;
+
+function groupByMonth(sessions: WorkoutSessionSummary[]) {
+  const groups = new Map<string, WorkoutSessionSummary[]>();
+  for (const session of sessions) {
+    const key = formatMonthYear(session.startedAt);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(session);
+  }
+  return Array.from(groups.entries()).map(([title, data]) => ({ title, data }));
+}
+
+export function HistoryScreen({ navigation }: Props) {
+  const unlocked = useBiometricGate();
+  const [sessions, setSessions] = useState<WorkoutSessionSummary[]>([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!unlocked) return;
+      listSessionSummaries().then(setSessions);
+    }, [unlocked]),
+  );
+
+  const sections = useMemo(() => groupByMonth(sessions), [sessions]);
+
+  if (!unlocked) return <SafeAreaView style={styles.safe} />;
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>История тренировок</Text>
+        <View style={{ width: 26 }} />
+      </View>
+
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ gap: spacing.sm }}
+        ListEmptyComponent={<Text style={styles.empty}>Пока нет сохранённых тренировок</Text>}
+        renderSectionHeader={({ section }) => <Text style={styles.sectionHeader}>{section.title}</Text>}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => navigation.navigate('SessionDetails', { sessionId: item.id })}
+          >
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name={item.mode === 'outdoor' ? 'location' : 'walk'}
+                size={18}
+                color={colors.accentStart}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.rowTitle}>
+                {formatSessionDate(item.startedAt)} · {item.mode === 'outdoor' ? 'Улица' : 'Дорожка'}
+              </Text>
+              <Text style={styles.rowSubtitle}>
+                {formatDuration(item.durationSec)}
+                {item.distanceMeters ? ` · ${formatDistanceKm(item.distanceMeters)} км` : ''}
+                {' · '}
+                {item.avgHr} уд/мин
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  sectionHeader: {
+    color: colors.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  empty: {
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: spacing.xxl,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowTitle: {
+    color: colors.textPrimary,
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  rowSubtitle: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+});
