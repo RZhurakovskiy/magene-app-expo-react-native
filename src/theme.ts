@@ -1,21 +1,40 @@
 export const colors = {
-  background: '#0B0B10',
-  surface: '#17171F',
-  surfaceAlt: '#1E1E28',
-  border: '#2A2A36',
-  textPrimary: '#F5F5F7',
-  textSecondary: '#9A9AA6',
-  textMuted: '#6B6B76',
-  accentStart: '#FF8A3D',
-  accentEnd: '#FF3B5C',
-  danger: '#FF3B5C',
-  success: '#3DDC97',
-  info: '#5AC8FA',
+  // base surfaces
+  background: '#0A0A0B',
+  surface: '#141517',
+  surfaceAlt: '#1E1F23',
+  border: '#2A2B31',
+
+  // semantic accents
+  green: '#2FD673', // valid / success / toggle-on / logo dot
+  accentStart: '#FF8A3D', // gradient start (orange)
+  accentEnd: '#FF3B5C', // gradient end (red)
+  danger: '#FF3B5C', // alert / active
+  blue: '#3E9BFF', // zone 1 / low / recovery
+  blueLight: '#63B3FF',
+
+  // text
+  textPrimary: '#F4F5F6',
+  textSecondary: '#9B9BA3',
+  textMuted: '#6B6C74',
+
+  // legacy aliases (kept so existing screens keep compiling)
+  success: '#2FD673',
+  info: '#3E9BFF',
 } as const;
 
 export const gradients = {
   accent: [colors.accentStart, colors.accentEnd] as const,
+  blue: [colors.blueLight, colors.blue] as const,
 };
+
+export const fonts = {
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semibold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  extrabold: 'Manrope_800ExtraBold',
+} as const;
 
 export const spacing = {
   xs: 4,
@@ -27,15 +46,17 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  sm: 10,
-  md: 16,
-  lg: 22,
+  sm: 12,
+  md: 18,
+  lg: 24,
   pill: 999,
 } as const;
 
 export const typography = {
-  hero: { fontSize: 56, fontWeight: '800' as const },
-  title: { fontSize: 20, fontWeight: '700' as const },
-  body: { fontSize: 15, fontWeight: '500' as const },
-  caption: { fontSize: 12, fontWeight: '600' as const },
+  hero: { fontFamily: fonts.extrabold, fontSize: 56, fontWeight: '800' as const },
+  title: { fontFamily: fonts.extrabold, fontSize: 28, fontWeight: '800' as const },
+  heading: { fontFamily: fonts.bold, fontSize: 20, fontWeight: '700' as const },
+  body: { fontFamily: fonts.medium, fontSize: 15, fontWeight: '500' as const },
+  label: { fontFamily: fonts.bold, fontSize: 12, fontWeight: '700' as const },
+  caption: { fontFamily: fonts.semibold, fontSize: 12, fontWeight: '600' as const },
 };

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, GestureResponderEvent, StyleSheet, Text, TouchableOpacity, ViewStyle } from 'react-native';
-import { gradients, radii, spacing, typography } from '../theme';
+import { colors, fonts, gradients, radii, spacing, typography } from '../theme';
 
 interface Props {
   label: string;
@@ -53,6 +53,7 @@ const styles = StyleSheet.create({
   },
   filledLabel: {
     color: '#fff',
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
     textAlign: 'center',
@@ -65,10 +66,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     borderWidth: 1.5,
-    borderColor: '#3A3A46',
+    borderColor: colors.border,
   },
   outlineLabel: {
     color: '#fff',
+    fontFamily: fonts.bold,
     fontSize: typography.body.fontSize,
     fontWeight: '700',
     textAlign: 'center',

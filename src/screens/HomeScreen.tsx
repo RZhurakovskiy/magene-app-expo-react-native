@@ -11,7 +11,7 @@ import { requestLocationPermissions, startOutdoorTracking } from '../location/ba
 import { RootStackParamList } from '../navigation/types';
 import { useProfileStore } from '../store/profileStore';
 import { useSessionStore } from '../store/sessionStore';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 import { WorkoutMode } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -200,11 +200,13 @@ const styles = StyleSheet.create({
   },
   monitoringTitle: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontWeight: '700',
     fontSize: 15,
   },
   monitoringSubtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     marginTop: 2,
   },
@@ -221,6 +223,7 @@ const styles = StyleSheet.create({
   },
   brandText: {
     color: colors.textPrimary,
+    fontFamily: fonts.extrabold,
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: 1,
@@ -242,6 +245,7 @@ const styles = StyleSheet.create({
   profileHintText: {
     flex: 1,
     color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 16,
   },
@@ -271,16 +275,19 @@ const styles = StyleSheet.create({
   },
   statusTitle: {
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: typography.body.fontSize,
   },
   statusSubtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     marginTop: 2,
   },
   sectionLabel: {
     color: colors.textMuted,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -288,6 +295,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     textAlign: 'center',
     marginTop: spacing.sm,

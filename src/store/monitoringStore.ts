@@ -22,6 +22,8 @@ async function flushBuffer(): Promise<void> {
   bufferRr = [];
 
   const sum = samples.reduce((a, b) => a + b, 0);
+  const hrv = rmssd(rr);
+  useMonitoringStore.setState({ lastHrvMs: hrv });
   try {
     await insertMonitoringMinute({
       minuteTs,
@@ -29,7 +31,7 @@ async function flushBuffer(): Promise<void> {
       minBpm: Math.min(...samples),
       maxBpm: Math.max(...samples),
       sampleCount: samples.length,
-      avgHrvMs: rmssd(rr),
+      avgHrvMs: hrv,
       rrCount: rr.length,
     });
   } catch {
@@ -42,6 +44,7 @@ interface MonitoringState {
   startedAt: number | null;
   sessionId: string | null;
   currentBpm: number | null;
+  lastHrvMs: number | null; // RMSSD of the last completed minute
 
   onSample: (bpm: number, rr: number[]) => void;
   start: () => void;
@@ -55,6 +58,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
   startedAt: null,
   sessionId: null,
   currentBpm: null,
+  lastHrvMs: null,
 
   onSample: (bpm, rr) => {
     const { status } = get();
@@ -77,7 +81,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
     bufferMinuteTs = minuteStart(Date.now());
     const id = generateId();
     const startedAt = Date.now();
-    set({ status: 'active', startedAt, sessionId: id });
+    set({ status: 'active', startedAt, sessionId: id, lastHrvMs: null });
     createMonitoringSession(id, startedAt).catch(() => {});
   },
 
@@ -90,7 +94,7 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
     bufferSamples = [];
     bufferRr = [];
     bufferMinuteTs = minuteStart(Date.now());
-    set({ status: 'active' });
+    set({ status: 'active', lastHrvMs: null });
   },
 
   stop: async () => {
@@ -99,6 +103,6 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
     if (sessionId) {
       await finalizeMonitoringSession(sessionId, Date.now()).catch(() => {});
     }
-    set({ status: 'idle', startedAt: null, sessionId: null, currentBpm: null });
+    set({ status: 'idle', startedAt: null, sessionId: null, currentBpm: null, lastHrvMs: null });
   },
 }));

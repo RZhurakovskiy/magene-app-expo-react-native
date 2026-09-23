@@ -1,3 +1,11 @@
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/manrope';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
@@ -18,6 +26,13 @@ const navigationTheme = {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
   const loadProfile = useProfileStore((s) => s.loadProfile);
   const loadLastKnownDevice = useSessionStore((s) => s.loadLastKnownDevice);
 
@@ -27,7 +42,7 @@ export default function App() {
       .finally(() => setReady(true));
   }, [loadProfile, loadLastKnownDevice]);
 
-  if (!ready) return null;
+  if (!ready || !fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>

@@ -15,7 +15,7 @@ import { RootStackParamList } from '../navigation/types';
 import { useMonitoringStore } from '../store/monitoringStore';
 import { useProfileStore } from '../store/profileStore';
 import { useSessionStore } from '../store/sessionStore';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 import { formatDuration } from '../utils/format';
 import { estimateMaxHr, getHrZone, NO_ZONE_COLOR } from '../utils/heartRateZones';
 
@@ -31,6 +31,7 @@ export function MonitoringScreen({ navigation }: Props) {
   const status = useMonitoringStore((s) => s.status);
   const currentBpm = useMonitoringStore((s) => s.currentBpm);
   const startedAt = useMonitoringStore((s) => s.startedAt);
+  const lastHrvMs = useMonitoringStore((s) => s.lastHrvMs);
   const profile = useProfileStore((s) => s.profile);
   const connectionStatus = useSessionStore((s) => s.connectionStatus);
   const lastKnownDevice = useSessionStore((s) => s.lastKnownDevice);
@@ -182,6 +183,16 @@ export function MonitoringScreen({ navigation }: Props) {
         <Text style={styles.bpmUnit}>УД/МИН</Text>
       </View>
 
+      {status !== 'idle' && (
+        <View style={styles.hrvRow}>
+          <Ionicons name="pulse-outline" size={15} color={colors.blue} />
+          <Text style={styles.hrvValue}>{lastHrvMs != null ? `${lastHrvMs} мс` : '—'}</Text>
+          <Text style={styles.hrvLabel}>
+            {lastHrvMs != null ? 'ВСР · за последнюю минуту' : 'ВСР · считаем за минуту…'}
+          </Text>
+        </View>
+      )}
+
       {todayStats && (
         <View style={styles.statsRow}>
           <StatTile icon="heart-outline" value={String(todayStats.avg)} label="средний" />
@@ -231,6 +242,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
@@ -247,11 +259,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontSize: 13,
     fontWeight: '600',
   },
   connBanner: {
     color: colors.accentStart,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
@@ -261,14 +275,35 @@ const styles = StyleSheet.create({
     marginVertical: spacing.sm,
   },
   bpmValue: {
+    fontFamily: fonts.extrabold,
     fontSize: typography.hero.fontSize,
     fontWeight: typography.hero.fontWeight,
   },
   bpmUnit: {
     color: colors.textMuted,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  hrvRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: -spacing.xs,
+  },
+  hrvValue: {
+    color: colors.blue,
+    fontFamily: fonts.bold,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  hrvLabel: {
+    color: colors.textMuted,
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    fontWeight: '600',
   },
   statsRow: {
     flexDirection: 'row',

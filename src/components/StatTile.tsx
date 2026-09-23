@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 interface Props {
   icon: keyof typeof Ionicons.glyphMap;
@@ -33,11 +33,13 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 18,
     fontWeight: '700',
   },
   label: {
     color: colors.textMuted,
+    fontFamily: fonts.semibold,
     fontSize: 11,
     fontWeight: '600',
   },

@@ -45,5 +45,7 @@ yarn-error.*
 CLAUDE.md
 AGENTS.md
 
-# Personal planning doc (kept local, not in repo)
+# Personal planning docs & design references (kept local, not in repo)
 AGENT_PLAN.md
+DESIGN_PLAN.md
+references/

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { WorkoutMode } from '../types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 interface Props {
   mode: WorkoutMode;
@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 13,
   },
