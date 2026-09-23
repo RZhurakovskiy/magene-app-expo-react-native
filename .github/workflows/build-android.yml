@@ -29,6 +29,20 @@ jobs:
       - name: Prebuild native Android project
         run: npx expo prebuild --platform android --clean
 
+      - name: Use stable signing key (so updates install over the old app)
+        # prebuild --clean regenerates a RANDOM debug.keystore every run, which
+        # changes the APK signature and forces a full uninstall (losing data).
+        # Overwrite it with the committed keystore so every build shares one key.
+        # No-op until signing/debug.keystore is committed, so the build never
+        # fails just because the key isn't there yet.
+        run: |
+          if [ -f signing/debug.keystore ]; then
+            cp signing/debug.keystore android/app/debug.keystore
+            echo "Applied committed signing key -> stable signature."
+          else
+            echo "No committed keystore; using prebuild key (signature not stable)."
+          fi
+
       - name: Build dev-client APK (needs Metro / expo start)
         working-directory: android
         run: ./gradlew assembleDebug -PreactNativeArchitectures=arm64-v8a

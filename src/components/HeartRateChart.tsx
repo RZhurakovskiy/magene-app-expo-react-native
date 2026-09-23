@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { HrSample } from '../types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 interface Props {
   samples: HrSample[];
@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: spacing.sm,
@@ -81,6 +82,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
   },
 });

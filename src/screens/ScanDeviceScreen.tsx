@@ -7,7 +7,7 @@ import { Device } from 'react-native-ble-plx';
 import { connectAndSubscribe } from '../ble/connectionManager';
 import { requestBlePermissions, scanForHeartRateDevices, waitForPoweredOn } from '../ble/heartRate';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ScanDevice'>;
 
@@ -109,11 +109,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   error: {
     color: colors.danger,
+    fontFamily: fonts.regular,
     fontSize: 13,
     marginBottom: spacing.md,
   },
@@ -124,6 +126,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   deviceRow: {
@@ -136,6 +139,7 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     flex: 1,
   },

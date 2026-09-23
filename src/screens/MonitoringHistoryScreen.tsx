@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listMonitoringSessions, MonitoringSession } from '../db/database';
 import { useBiometricGate } from '../hooks/useBiometricGate';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { formatDuration, formatSessionDateTime } from '../utils/format';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MonitoringHistory'>;
@@ -86,11 +86,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   empty: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     textAlign: 'center',
     marginTop: spacing.xxl,
   },
@@ -112,11 +114,13 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 14,
   },
   rowSubtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     marginTop: 2,
   },

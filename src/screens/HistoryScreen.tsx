@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listSessionSummaries } from '../db/database';
 import { useBiometricGate } from '../hooks/useBiometricGate';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { WorkoutSessionSummary } from '../types';
 import { formatDistanceKm, formatDuration, formatMonthYear, formatSessionDate } from '../utils/format';
 
@@ -100,11 +100,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   sectionHeader: {
     color: colors.textMuted,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -113,6 +115,7 @@ const styles = StyleSheet.create({
   },
   empty: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     textAlign: 'center',
     marginTop: spacing.xxl,
   },
@@ -134,11 +137,13 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 14,
   },
   rowSubtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     marginTop: 2,
   },

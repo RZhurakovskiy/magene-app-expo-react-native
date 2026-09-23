@@ -2,7 +2,7 @@ import { Camera, type CameraRef, GeoJSONSource, Layer, Map, Marker } from '@mapl
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { RoutePoint } from '../types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: spacing.sm,
@@ -91,6 +92,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   dot: {

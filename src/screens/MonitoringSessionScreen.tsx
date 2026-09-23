@@ -14,7 +14,7 @@ import {
 } from '../db/database';
 import { useBiometricGate } from '../hooks/useBiometricGate';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { formatDuration, formatSessionDateTime } from '../utils/format';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MonitoringSession'>;
@@ -111,11 +111,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   subtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   row: {
@@ -130,26 +132,31 @@ const styles = StyleSheet.create({
   },
   hrvTitle: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
   },
   hrvValue: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 22,
     fontWeight: '700',
   },
   hrvUnit: {
     color: colors.textMuted,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
   },
   hrvNote: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 16,
   },
   footer: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     textAlign: 'center',
     paddingBottom: spacing.lg,

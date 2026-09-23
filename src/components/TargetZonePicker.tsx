@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ZONES } from '../utils/heartRateZones';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 export interface TargetZoneRange {
   min: number;
@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: colors.textSecondary,
+    fontFamily: fonts.bold,
     fontWeight: '700',
     fontSize: 14,
   },
@@ -76,6 +77,7 @@ const styles = StyleSheet.create({
   },
   hint: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 11,
     marginTop: spacing.sm,
     lineHeight: 15,

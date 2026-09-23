@@ -12,7 +12,7 @@ import { stopOutdoorTracking } from '../location/backgroundLocation';
 import { RootStackParamList } from '../navigation/types';
 import { useProfileStore } from '../store/profileStore';
 import { useSessionStore } from '../store/sessionStore';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, fonts, radii, spacing, typography } from '../theme';
 import { WorkoutSession } from '../types';
 import { computeCaloriesFromSamples } from '../utils/calories';
 import { formatDistanceKm, formatDuration, formatPace } from '../utils/format';
@@ -188,6 +188,7 @@ const styles = StyleSheet.create({
   },
   modeLabel: {
     color: colors.textSecondary,
+    fontFamily: fonts.bold,
     fontWeight: '700',
     fontSize: 12,
     letterSpacing: 1,
@@ -195,6 +196,7 @@ const styles = StyleSheet.create({
   },
   statusBanner: {
     color: colors.accentStart,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     textAlign: 'center',
     fontWeight: '600',
@@ -205,11 +207,13 @@ const styles = StyleSheet.create({
   },
   bpmValue: {
     color: colors.accentStart,
+    fontFamily: fonts.extrabold,
     fontSize: typography.hero.fontSize,
     fontWeight: typography.hero.fontWeight,
   },
   bpmUnit: {
     color: colors.textMuted,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -223,12 +227,14 @@ const styles = StyleSheet.create({
   },
   zoneText: {
     color: '#0B0B10',
+    fontFamily: fonts.extrabold,
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
   zonePercent: {
     color: '#0B0B10',
+    fontFamily: fonts.semibold,
     fontSize: 11,
     fontWeight: '600',
     opacity: 0.75,
@@ -240,6 +246,7 @@ const styles = StyleSheet.create({
   },
   targetWarning: {
     color: colors.danger,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     marginTop: spacing.sm,

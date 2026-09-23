@@ -12,7 +12,7 @@ import { StatTile } from '../components/StatTile';
 import { getSessionById } from '../db/database';
 import { useBiometricGate } from '../hooks/useBiometricGate';
 import { RootStackParamList } from '../navigation/types';
-import { colors, spacing } from '../theme';
+import { colors, fonts, spacing } from '../theme';
 import { WorkoutSession } from '../types';
 import { formatDistanceKm, formatDuration, formatPace, formatSessionDateTime } from '../utils/format';
 import { buildGpx, gpxFileName } from '../utils/gpx';
@@ -122,11 +122,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   subtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   row: {

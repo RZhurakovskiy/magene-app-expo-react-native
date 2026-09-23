@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientButton } from '../components/GradientButton';
 import { StatTile } from '../components/StatTile';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { formatDistanceKm, formatDuration, formatPace, formatSessionDateTime } from '../utils/format';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'WorkoutSummary'>;
@@ -76,11 +76,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 20,
     fontWeight: '700',
   },
   subtitle: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
     marginTop: spacing.xs,
     marginBottom: spacing.xl,

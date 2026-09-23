@@ -8,7 +8,7 @@ import { StatTile } from '../components/StatTile';
 import { listSessionsSince } from '../db/database';
 import { RootStackParamList } from '../navigation/types';
 import { useProfileStore } from '../store/profileStore';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { WorkoutSession } from '../types';
 import { formatDistanceKm, formatDuration } from '../utils/format';
 import { ZONES } from '../utils/heartRateZones';
@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
@@ -156,6 +157,7 @@ const styles = StyleSheet.create({
   },
   periodText: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 13,
   },
@@ -173,6 +175,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   zoneCard: {
@@ -182,6 +185,7 @@ const styles = StyleSheet.create({
   },
   zoneCardTitle: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontSize: 12,
     fontWeight: '600',
     marginBottom: spacing.md,
@@ -207,10 +211,12 @@ const styles = StyleSheet.create({
   zoneLegendLabel: {
     flex: 1,
     color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 13,
   },
   zoneLegendTime: {
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -225,6 +231,7 @@ const styles = StyleSheet.create({
   profileHintText: {
     flex: 1,
     color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 16,
   },

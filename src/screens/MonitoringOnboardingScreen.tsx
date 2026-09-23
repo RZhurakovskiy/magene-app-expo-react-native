@@ -8,7 +8,7 @@ import { setFlag } from '../db/database';
 import { detectOemFamily, openAppDetailsSettings, openAutoStartSettings } from '../monitoring/oem';
 import { MONITORING_ONBOARDING_FLAG } from '../monitoring/flags';
 import { RootStackParamList } from '../navigation/types';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MonitoringOnboarding'>;
 
@@ -102,11 +102,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   intro: {
     color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -118,11 +120,13 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 15,
     fontWeight: '700',
   },
   cardBody: {
     color: colors.textSecondary,
+    fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 19,
   },
@@ -134,6 +138,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     color: colors.accentStart,
+    fontFamily: fonts.semibold,
     fontSize: 14,
     fontWeight: '600',
   },

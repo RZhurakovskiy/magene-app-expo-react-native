@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientButton } from '../components/GradientButton';
 import { RootStackParamList } from '../navigation/types';
 import { useProfileStore } from '../store/profileStore';
-import { colors, radii, spacing } from '../theme';
+import { colors, fonts, radii, spacing } from '../theme';
 import { Gender } from '../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Profile'>;
@@ -108,17 +108,20 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.textPrimary,
+    fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
   },
   hint: {
     color: colors.textMuted,
+    fontFamily: fonts.regular,
     fontSize: 12,
     marginBottom: spacing.xl,
     lineHeight: 18,
   },
   label: {
     color: colors.textMuted,
+    fontFamily: fonts.bold,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -130,6 +133,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     color: colors.textPrimary,
+    fontFamily: fonts.semibold,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: spacing.lg,
@@ -153,6 +157,7 @@ const styles = StyleSheet.create({
   },
   genderLabel: {
     color: colors.textSecondary,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
   },
   genderLabelActive: {
