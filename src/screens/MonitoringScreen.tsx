@@ -60,11 +60,13 @@ export function MonitoringScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (status === 'idle') return;
-    const interval = setInterval(() => {
-      setNow(Date.now());
-      refreshToday();
-    }, 5000);
-    return () => clearInterval(interval);
+    // Duration ticks every second; the (heavier) data refresh stays on a slower cadence.
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    const refresh = setInterval(refreshToday, 5000);
+    return () => {
+      clearInterval(tick);
+      clearInterval(refresh);
+    };
   }, [status, refreshToday]);
 
   const isConnected = connectionStatus === 'connected';
