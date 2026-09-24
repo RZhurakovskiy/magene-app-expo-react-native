@@ -157,12 +157,15 @@ export function MonitoringScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title} onLongPress={shareBleLog}>
-          Суточный мониторинг
-        </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('MonitoringHistory')}>
-          <Ionicons name="time-outline" size={22} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <Text style={styles.title}>Суточный мониторинг</Text>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={shareBleLog} accessibilityLabel="Журнал подключения датчика">
+            <Ionicons name="document-text-outline" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('MonitoringHistory')}>
+            <Ionicons name="time-outline" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.statusRow}>
@@ -184,7 +187,7 @@ export function MonitoringScreen({ navigation }: Props) {
                 ? 'Подключение к датчику…'
                 : 'Датчик отключён'}
           </Text>
-          <Text style={styles.connHint}>Нажми, чтобы повторить сейчас · удерживай — журнал</Text>
+          <Text style={styles.connHint}>Нажми, чтобы повторить подключение сейчас</Text>
         </TouchableOpacity>
       )}
 
@@ -259,6 +262,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 17,
     fontWeight: '700',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
   },
   statusRow: {
     flexDirection: 'row',
