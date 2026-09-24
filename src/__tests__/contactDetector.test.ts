@@ -29,6 +29,17 @@ describe('contact detector', () => {
     expect(verdicts[7].hasContact).toBe(false);
   });
 
+  it('keeps contact when RR-intervals pause but the pulse keeps changing', () => {
+    // Field log, Magene H64 at rest: RR missing for 5-7 s while the BPM moved.
+    const detector = createContactDetector();
+    detector.onConnected(0);
+    for (let t = 1000; t <= 5000; t += 1000) detector.push(reading(88, [680 + t / 1000]), t);
+    const bpms = [88, 89, 89, 90, 89, 88, 88, 87];
+    for (let i = 0; i < bpms.length; i++) {
+      expect(detector.push(reading(bpms[i]), 6000 + i * 1000).hasContact).toBe(true);
+    }
+  });
+
   it('treats a repeated RR list as no new beat', () => {
     const detector = createContactDetector();
     detector.onConnected(0);

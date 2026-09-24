@@ -23,7 +23,9 @@ export interface ContactSample {
 export interface ContactDetectorOptions {
   // Readings below this are "no signal" (straps send 0 when they read nothing).
   minValidBpm: number;
-  // Sensor known to send RR-intervals: no new beat for this long means no contact.
+  // Sensor known to send RR-intervals: no new beat AND no BPM change for this
+  // long means no contact. RR alone is not enough: the Magene H64 skips RR for
+  // several seconds on a weak signal while still measuring the pulse.
   noRrTimeoutMs: number;
   // Sensor without RR and without contact reporting: an unchanged BPM for this
   // long is treated as a frozen reading.
@@ -99,7 +101,9 @@ export function createContactDetector(options: Partial<ContactDetectorOptions> =
       if (sample.bpm < opts.minValidBpm) return lost('no-signal');
       // Only trust "lost" from a strap that has shown it reports contact at all.
       if (sample.contact === 'lost' && reportedContact) return lost('sensor-flag');
-      if (sendsRr && now - lastFreshRrAt > opts.noRrTimeoutMs) return lost('no-rr');
+      if (sendsRr && now - lastFreshRrAt > opts.noRrTimeoutMs && now - bpmChangedAt > opts.noRrTimeoutMs) {
+        return lost('no-rr');
+      }
       if (!sendsRr && sample.contact !== 'detected' && now - bpmChangedAt > opts.flatlineTimeoutMs) {
         return lost('flatline');
       }
