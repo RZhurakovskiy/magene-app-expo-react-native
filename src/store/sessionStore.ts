@@ -4,6 +4,10 @@ import { HrSample, RoutePoint, WorkoutMode } from '../types';
 
 export type BleConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting';
 
+// Whether the connected strap is actually reading a heart ('lost' = connected,
+// but off the skin / sending a frozen value). 'unknown' until the first packet.
+export type SensorContactStatus = 'unknown' | 'ok' | 'lost';
+
 interface KnownDevice {
   id: string;
   name: string;
@@ -25,28 +29,33 @@ interface ActiveWorkout {
 
 interface SessionState {
   connectionStatus: BleConnectionStatus;
+  sensorContact: SensorContactStatus;
   connectedDevice: KnownDevice | null;
   lastKnownDevice: KnownDevice | null;
   activeWorkout: ActiveWorkout | null;
 
   setConnectionStatus: (status: BleConnectionStatus) => void;
+  setSensorContact: (contact: SensorContactStatus) => void;
   setConnectedDevice: (device: KnownDevice | null) => void;
   setLastKnownDevice: (device: KnownDevice) => void;
   loadLastKnownDevice: () => Promise<void>;
 
   startWorkout: (mode: WorkoutMode, targetZoneRange: TargetZoneRange | null) => void;
   addHrSample: (bpm: number) => void;
+  clearCurrentBpm: () => void;
   appendRoutePoint: (point: RoutePoint) => void;
   endWorkout: () => ActiveWorkout | null;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   connectionStatus: 'disconnected',
+  sensorContact: 'unknown',
   connectedDevice: null,
   lastKnownDevice: null,
   activeWorkout: null,
 
   setConnectionStatus: (status) => set({ connectionStatus: status }),
+  setSensorContact: (contact) => set({ sensorContact: contact }),
   setConnectedDevice: (device) => set({ connectedDevice: device }),
   setLastKnownDevice: (device) => set({ lastKnownDevice: device }),
   loadLastKnownDevice: async () => {
@@ -76,6 +85,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         hrSamples: [...workout.hrSamples, { t: Date.now(), bpm }],
       },
     });
+  },
+
+  // Drop the live value (no contact / link lost) so the screen shows "--"
+  // instead of the last reading frozen in place.
+  clearCurrentBpm: () => {
+    const workout = get().activeWorkout;
+    if (!workout || workout.currentBpm === null) return;
+    set({ activeWorkout: { ...workout, currentBpm: null } });
   },
 
   appendRoutePoint: (point) => {

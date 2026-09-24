@@ -38,6 +38,7 @@ export function ActiveWorkoutScreen({ navigation }: Props) {
   useKeepAwake();
   const workout = useSessionStore((s) => s.activeWorkout);
   const connectionStatus = useSessionStore((s) => s.connectionStatus);
+  const sensorContact = useSessionStore((s) => s.sensorContact);
   const endWorkout = useSessionStore((s) => s.endWorkout);
   const profile = useProfileStore((s) => s.profile);
   const [now, setNow] = useState(Date.now());
@@ -57,12 +58,16 @@ export function ActiveWorkoutScreen({ navigation }: Props) {
   const calories = workout ? computeCaloriesFromSamples(workout.hrSamples, profile) : undefined;
 
   const maxHr = profile ? estimateMaxHr(profile.age, profile.gender) : null;
-  const zoneResult = workout && maxHr ? getHrZone(workout.currentBpm ?? 0, maxHr) : null;
+  // No live reading (not started yet, strap off the skin, link lost) is not
+  // "0 bpm": no zone, and no "pulse below target" alerts for it.
+  const liveBpm = workout?.currentBpm ?? null;
+  const zoneResult = maxHr && liveBpm !== null ? getHrZone(liveBpm, maxHr) : null;
   const zoneColor = zoneResult?.zone?.color ?? (zoneResult ? NO_ZONE_COLOR : colors.accentStart);
 
   const targetRange = workout?.targetZoneRange ?? null;
   const currentZoneIndex = zoneResult?.zone?.index ?? 0;
-  const inTargetRange = !targetRange || (currentZoneIndex >= targetRange.min && currentZoneIndex <= targetRange.max);
+  const inTargetRange =
+    !targetRange || liveBpm === null || (currentZoneIndex >= targetRange.min && currentZoneIndex <= targetRange.max);
   const targetDirection: 'above' | 'below' | null = !targetRange || inTargetRange
     ? null
     : currentZoneIndex > targetRange.max
@@ -126,6 +131,10 @@ export function ActiveWorkoutScreen({ navigation }: Props) {
 
       {connectionStatus !== 'connected' && (
         <Text style={styles.statusBanner}>{STATUS_LABEL[connectionStatus]}</Text>
+      )}
+
+      {connectionStatus === 'connected' && sensorContact === 'lost' && (
+        <Text style={styles.statusBanner}>Нет контакта с кожей — пульс не записывается</Text>
       )}
 
       <View style={styles.bpmBlock}>

@@ -34,6 +34,7 @@ export function MonitoringScreen({ navigation }: Props) {
   const lastHrvMs = useMonitoringStore((s) => s.lastHrvMs);
   const profile = useProfileStore((s) => s.profile);
   const connectionStatus = useSessionStore((s) => s.connectionStatus);
+  const sensorContact = useSessionStore((s) => s.sensorContact);
   const lastKnownDevice = useSessionStore((s) => s.lastKnownDevice);
 
   const [now, setNow] = useState(Date.now());
@@ -176,6 +177,10 @@ export function MonitoringScreen({ navigation }: Props) {
               ? 'Подключение к датчику…'
               : 'Датчик отключён'}
         </Text>
+      )}
+
+      {status !== 'idle' && connectionStatus === 'connected' && sensorContact === 'lost' && (
+        <Text style={styles.connBanner}>Нет контакта с кожей — пульс не записывается</Text>
       )}
 
       <View style={styles.bpmBlock}>

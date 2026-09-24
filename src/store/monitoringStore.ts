@@ -47,6 +47,11 @@ interface MonitoringState {
   lastHrvMs: number | null; // RMSSD of the last completed minute
 
   onSample: (bpm: number, rr: number[]) => void;
+  // No valid reading right now (link lost / no skin contact): show "--".
+  clearLiveBpm: () => void;
+  // Persist the buffered minute once it's over, even if no newer sample comes
+  // along to trigger it (strap off the body, link down, app about to be killed).
+  flushIfMinuteEnded: () => void;
   start: () => void;
   pause: () => void;
   resume: () => void;
@@ -73,6 +78,16 @@ export const useMonitoringStore = create<MonitoringState>((set, get) => ({
     if (bufferSamples.length === 0) bufferMinuteTs = m;
     bufferSamples.push(bpm);
     if (rr.length > 0) bufferRr.push(...rr);
+  },
+
+  clearLiveBpm: () => {
+    if (get().currentBpm !== null) set({ currentBpm: null });
+  },
+
+  flushIfMinuteEnded: () => {
+    if (bufferSamples.length > 0 && minuteStart(Date.now()) !== bufferMinuteTs) {
+      flushBuffer();
+    }
   },
 
   start: () => {

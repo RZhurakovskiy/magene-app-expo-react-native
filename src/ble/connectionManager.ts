@@ -1,95 +1,97 @@
-import { Device } from 'react-native-ble-plx';
 import { saveKnownDevice } from '../db/database';
 import { useMonitoringStore } from '../store/monitoringStore';
 import { useSessionStore } from '../store/sessionStore';
-import { connectToDevice, disconnectDevice, subscribeToHeartRate } from './heartRate';
+import { ConnectionSupervisor, createConnectionSupervisor, LinkTarget } from './connectionSupervisor';
+import { ContactDetector, createContactDetector } from './contactDetector';
+import { bleLink } from './heartRate';
+import { parseHeartRateMeasurement } from './hrParser';
 
 const MIN_VALID_BPM = 20;
-
-let activeDevice: Device | null = null;
-let currentTarget: { id: string; name: string } | null = null;
-let lastSampleAt = 0;
 
 function isSensorNeeded(): boolean {
   return useSessionStore.getState().activeWorkout !== null || useMonitoringStore.getState().status !== 'idle';
 }
 
-export async function connectAndSubscribe(deviceId: string, deviceName: string): Promise<void> {
-  const store = useSessionStore.getState();
-  store.setConnectionStatus('connecting');
+// Contact knowledge (does this strap send RR / report contact) is per sensor.
+let contactDetector: ContactDetector = createContactDetector({ minValidBpm: MIN_VALID_BPM });
+let contactDeviceId: string | null = null;
 
-  const device = await connectToDevice(deviceId);
-  activeDevice = device;
-  currentTarget = { id: deviceId, name: deviceName };
-  lastSampleAt = Date.now();
-
-  subscribeToHeartRate(
-    device,
-    ({ bpm, rr }) => {
-      if (bpm < MIN_VALID_BPM) return;
-      lastSampleAt = Date.now();
-      useSessionStore.getState().addHrSample(bpm);
-      useMonitoringStore.getState().onSample(bpm, rr);
-    },
-    () => handleDisconnected(deviceId, deviceName),
-  );
-
-  store.setConnectedDevice({ id: deviceId, name: deviceName });
-  store.setLastKnownDevice({ id: deviceId, name: deviceName });
-  store.setConnectionStatus('connected');
-  saveKnownDevice({ id: deviceId, name: deviceName }).catch(() => {});
+function clearLiveReadings(): void {
+  useMonitoringStore.getState().clearLiveBpm();
+  useSessionStore.getState().clearCurrentBpm();
 }
 
-function handleDisconnected(deviceId: string, deviceName: string) {
-  const store = useSessionStore.getState();
-  activeDevice = null;
-  store.setConnectedDevice(null);
+function handleMeasurement(value: string): void {
+  const sample = parseHeartRateMeasurement(value);
+  const verdict = contactDetector.push(sample, Date.now());
 
-  if (isSensorNeeded()) {
-    attemptReconnect(deviceId, deviceName, 1);
-  } else {
-    store.setConnectionStatus('disconnected');
-  }
-}
+  const session = useSessionStore.getState();
+  const contact = verdict.hasContact ? 'ok' : 'lost';
+  if (session.sensorContact !== contact) session.setSensorContact(contact);
 
-function attemptReconnect(deviceId: string, deviceName: string, attempt: number) {
-  if (!isSensorNeeded()) {
-    useSessionStore.getState().setConnectionStatus('disconnected');
+  if (!verdict.hasContact) {
+    // The strap is not on the skin (or reads nothing): what it sends now is a
+    // frozen or empty value, so keep it out of the live view and the records.
+    clearLiveReadings();
     return;
   }
-  useSessionStore.getState().setConnectionStatus('reconnecting');
 
-  const delayMs = Math.min(1000 * attempt, 5000);
-  setTimeout(async () => {
-    if (!isSensorNeeded()) {
-      useSessionStore.getState().setConnectionStatus('disconnected');
-      return;
-    }
-    try {
-      await connectAndSubscribe(deviceId, deviceName);
-    } catch {
-      attemptReconnect(deviceId, deviceName, attempt + 1);
-    }
-  }, delayMs);
+  session.addHrSample(sample.bpm);
+  useMonitoringStore.getState().onSample(sample.bpm, sample.rr);
 }
 
-// Catches "silent" BLE drops where onDisconnected never fires: if we believe we're
-// connected but no valid sample has arrived for staleMs, force a reconnect cycle.
-export async function recoverIfStale(staleMs: number): Promise<void> {
-  if (!isSensorNeeded() || !currentTarget) return;
-  if (useSessionStore.getState().connectionStatus !== 'connected') return;
-  if (Date.now() - lastSampleAt < staleMs) return;
+function createSupervisor(): ConnectionSupervisor {
+  return createConnectionSupervisor(bleLink, {
+    onStatus: (status) => useSessionStore.getState().setConnectionStatus(status),
 
-  const target = currentTarget;
-  const dying = activeDevice;
-  activeDevice = null;
-  useSessionStore.getState().setConnectionStatus('reconnecting');
-  if (dying) {
-    await Promise.race([disconnectDevice(dying.id).catch(() => {}), new Promise((r) => setTimeout(r, 3000))]);
-  }
-  attemptReconnect(target.id, target.name, 1);
+    onConnected: (target) => {
+      if (contactDeviceId !== target.id) {
+        contactDetector = createContactDetector({ minValidBpm: MIN_VALID_BPM });
+        contactDeviceId = target.id;
+      }
+      contactDetector.onConnected(Date.now());
+
+      const store = useSessionStore.getState();
+      store.setSensorContact('unknown');
+      store.setConnectedDevice(target);
+      store.setLastKnownDevice(target);
+      saveKnownDevice(target).catch(() => {});
+    },
+
+    onLinkDown: () => {
+      const store = useSessionStore.getState();
+      store.setConnectedDevice(null);
+      store.setSensorContact('unknown');
+      clearLiveReadings();
+    },
+
+    onValue: handleMeasurement,
+    shouldReconnect: isSensorNeeded,
+    log: (message, error) => {
+      console.log(`[ble] ${message}`, error instanceof Error ? error.message : (error ?? ''));
+    },
+  });
 }
 
-export function getActiveDevice(): Device | null {
-  return activeDevice;
+// One supervisor per JS runtime. On a Fast Refresh the previous instance still
+// owns listeners on the shared BleManager, so retire it and pick its device up.
+const supervisorRef = globalThis as unknown as { __hrSupervisor?: ConnectionSupervisor };
+const previousSupervisor = supervisorRef.__hrSupervisor;
+const resumeTarget: LinkTarget | null = previousSupervisor?.isConnected() ? previousSupervisor.getTarget() : null;
+previousSupervisor?.dispose();
+const supervisor = createSupervisor();
+supervisorRef.__hrSupervisor = supervisor;
+if (resumeTarget) supervisor.connect(resumeTarget).catch(() => {});
+
+// Connects to the strap (or joins a connection already in progress). A no-op
+// when that strap is already connected. Rejects if the attempt fails; while a
+// workout or monitoring is running the reconnect loop keeps trying regardless.
+export function connectAndSubscribe(deviceId: string, deviceName: string): Promise<void> {
+  return supervisor.connect({ id: deviceId, name: deviceName });
+}
+
+// Catches "silent" BLE drops where Android never reports a disconnect: if a
+// connected strap has sent nothing for staleMs, force one reconnect cycle.
+export function recoverIfStale(staleMs: number): Promise<void> {
+  return supervisor.checkStale(staleMs);
 }

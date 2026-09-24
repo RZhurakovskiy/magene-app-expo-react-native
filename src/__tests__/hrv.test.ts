@@ -21,4 +21,11 @@ describe('rmssd', () => {
     // 5000 ms is dropped, leaving [800, 810] => diff 10
     expect(rmssd([800, 5000, 810])).toBe(10);
   });
+
+  it('skips beat pairs that jump more than 20% (missed or extra beats)', () => {
+    // 1600 ms is a missed beat: both pairs touching it are left out,
+    // leaving diffs 10 and -10 => 10 instead of a ~560 ms spike.
+    expect(rmssd([800, 810, 1600, 800, 790])).toBe(10);
+    expect(rmssd([800, 1600])).toBeNull();
+  });
 });

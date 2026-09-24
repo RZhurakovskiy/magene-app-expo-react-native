@@ -38,4 +38,20 @@ describe('parseHeartRateMeasurement', () => {
     expect(result.bpm).toBe(200);
     expect(result.rr).toEqual([1000]);
   });
+
+  it('reads the sensor contact bits (bit 2 = supported, bit 1 = detected)', () => {
+    expect(parseHeartRateMeasurement(b64([0x06, 70])).contact).toBe('detected');
+    expect(parseHeartRateMeasurement(b64([0x04, 70])).contact).toBe('lost');
+    expect(parseHeartRateMeasurement(b64([0x00, 70])).contact).toBe('unsupported');
+    expect(parseHeartRateMeasurement(b64([0x02, 70])).contact).toBe('unsupported');
+    // contact bits combined with RR-intervals
+    const withRr = parseHeartRateMeasurement(b64([0x16, 60, 0x00, 0x04]));
+    expect(withRr.contact).toBe('detected');
+    expect(withRr.rr).toEqual([1000]);
+  });
+
+  it('reports no reading for a truncated packet instead of an undefined BPM', () => {
+    expect(parseHeartRateMeasurement(b64([0x00])).bpm).toBe(0);
+    expect(parseHeartRateMeasurement(b64([0x01, 0x2c])).bpm).toBe(0);
+  });
 });

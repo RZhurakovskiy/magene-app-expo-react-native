@@ -42,6 +42,16 @@ export function MonitoringSessionScreen({ route, navigation }: Props) {
     () => minutes.filter((m) => m.avgHrvMs != null).map((m) => ({ t: m.minuteTs, bpm: m.avgHrvMs as number })),
     [minutes],
   );
+  // The HRV chart has no value axis, so its range is spelled out above it.
+  const hrvRange = useMemo(() => {
+    if (hrvSamples.length === 0) return null;
+    const values = hrvSamples.map((s) => s.bpm);
+    return {
+      min: Math.min(...values),
+      avg: Math.round(values.reduce((sum, v) => sum + v, 0) / values.length),
+      max: Math.max(...values),
+    };
+  }, [hrvSamples]);
 
   if (!unlocked || !session) return <SafeAreaView style={styles.safe} />;
 
@@ -86,8 +96,15 @@ export function MonitoringSessionScreen({ route, navigation }: Props) {
           )}
         </View>
 
-        {hrvSamples.length > 1 && (
-          <HeartRateChart samples={hrvSamples} title="HRV за сессию (мс)" height={120} color={colors.info} />
+        {hrvSamples.length > 1 && hrvRange && (
+          <>
+            <View style={styles.row}>
+              <StatTile icon="trending-down-outline" value={`${hrvRange.min} мс`} label="HRV мин" />
+              <StatTile icon="pulse-outline" value={`${hrvRange.avg} мс`} label="HRV средн." />
+              <StatTile icon="trending-up-outline" value={`${hrvRange.max} мс`} label="HRV макс" />
+            </View>
+            <HeartRateChart samples={hrvSamples} title="HRV за сессию (мс)" height={120} color={colors.info} />
+          </>
         )}
 
         <Text style={styles.footer}>{session.minutesTracked ?? 0} минут записано</Text>

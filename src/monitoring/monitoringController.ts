@@ -1,5 +1,6 @@
 import { recoverIfStale } from '../ble/connectionManager';
 import { useMonitoringStore } from '../store/monitoringStore';
+import { useSessionStore } from '../store/sessionStore';
 import {
   requestNotificationPermission,
   startMonitoringForegroundService,
@@ -31,7 +32,11 @@ function clearTimers(): void {
 
 function notificationBody(): string {
   const { status, currentBpm } = useMonitoringStore.getState();
+  const { connectionStatus, sensorContact } = useSessionStore.getState();
   if (status === 'paused') return 'На паузе';
+  if (connectionStatus === 'connecting') return 'Подключение к датчику…';
+  if (connectionStatus !== 'connected') return 'Датчик потерян — переподключаемся…';
+  if (sensorContact === 'lost') return 'Нет контакта с кожей — пульс не записывается';
   return currentBpm ? `Текущий пульс: ${currentBpm} уд/мин` : 'Ожидание данных с датчика…';
 }
 
@@ -54,7 +59,9 @@ export async function startMonitoring(): Promise<boolean> {
 
     clearTimers();
     notificationTimer = setInterval(() => {
-      if (useMonitoringStore.getState().status === 'idle') return;
+      const monitoring = useMonitoringStore.getState();
+      if (monitoring.status === 'idle') return;
+      monitoring.flushIfMinuteEnded();
       refreshNotification();
     }, NOTIFICATION_REFRESH_MS);
     watchdogTimer = setInterval(() => {

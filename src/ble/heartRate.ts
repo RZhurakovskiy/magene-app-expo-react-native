@@ -1,6 +1,7 @@
 import { PermissionsAndroid, Platform } from 'react-native';
-import { BleError, BleManager, Device, State, Subscription } from 'react-native-ble-plx';
-import { base64ToBytes, HeartRateSample, parseHeartRateMeasurement } from './hrParser';
+import { BleError, BleManager, Device, State } from 'react-native-ble-plx';
+import type { BleLink } from './connectionSupervisor';
+import { base64ToBytes } from './hrParser';
 
 export { parseHeartRateMeasurement } from './hrParser';
 export type { HeartRateSample } from './hrParser';
@@ -62,32 +63,52 @@ export function scanForHeartRateDevices(
   return () => manager.stopDeviceScan();
 }
 
-export async function connectToDevice(deviceId: string): Promise<Device> {
-  const device = await manager.connectToDevice(deviceId, { timeout: 10000 });
-  await device.discoverAllServicesAndCharacteristics();
-  return device;
-}
+const CONNECT_TIMEOUT_MS = 10000;
 
-export function subscribeToHeartRate(
-  device: Device,
-  onSample: (sample: HeartRateSample) => void,
-  onDisconnected: () => void,
-): Subscription {
-  device.onDisconnected(() => onDisconnected());
+// The only code that opens or closes the strap connection. It is driven solely
+// by the connection supervisor (connectionSupervisor.ts), which keeps one
+// connect in flight at a time and removes every listener it registers.
+export const bleLink: BleLink = {
+  async connect(deviceId) {
+    const device = await manager.connectToDevice(deviceId, { timeout: CONNECT_TIMEOUT_MS });
+    try {
+      await device.discoverAllServicesAndCharacteristics();
+    } catch (error) {
+      // Don't leave a half-open link behind: the next connectToDevice() would
+      // cancel it and fire a disconnect event on top of the retry.
+      await manager.cancelDeviceConnection(deviceId).catch(() => {});
+      throw error;
+    }
+  },
 
-  return device.monitorCharacteristicForService(
-    HEART_RATE_SERVICE_UUID,
-    HEART_RATE_MEASUREMENT_UUID,
-    (error, characteristic) => {
-      if (error) {
-        return;
-      }
-      if (characteristic?.value) {
-        onSample(parseHeartRateMeasurement(characteristic.value));
-      }
-    },
-  );
-}
+  async disconnect(deviceId) {
+    // Also aborts a connection attempt that is still pending.
+    await manager.cancelDeviceConnection(deviceId).catch(() => {});
+  },
+
+  isConnected(deviceId) {
+    return manager.isDeviceConnected(deviceId);
+  },
+
+  onDisconnected(deviceId, listener) {
+    return manager.onDeviceDisconnected(deviceId, () => listener());
+  },
+
+  monitor(deviceId, onValue, onError) {
+    return manager.monitorCharacteristicForDevice(
+      deviceId,
+      HEART_RATE_SERVICE_UUID,
+      HEART_RATE_MEASUREMENT_UUID,
+      (error, characteristic) => {
+        if (error) {
+          onError(error);
+          return;
+        }
+        if (characteristic?.value) onValue(characteristic.value);
+      },
+    );
+  },
+};
 
 export async function readBatteryLevel(device: Device): Promise<number | null> {
   try {
