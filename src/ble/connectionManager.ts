@@ -7,6 +7,23 @@ import { bleLink } from './heartRate';
 import { parseHeartRateMeasurement } from './hrParser';
 
 const MIN_VALID_BPM = 20;
+const LOG_LIMIT = 300;
+
+// Last connection events, kept in memory so they can be shared from the phone
+// (release builds have no Metro console to read them from).
+const bleLog: string[] = [];
+
+function logBle(message: string, error?: unknown): void {
+  const detail = error instanceof Error ? `: ${error.message}` : error ? `: ${String(error)}` : '';
+  const line = `${new Date().toLocaleTimeString('ru-RU')} ${message}${detail}`;
+  bleLog.push(line);
+  if (bleLog.length > LOG_LIMIT) bleLog.splice(0, bleLog.length - LOG_LIMIT);
+  console.log(`[ble] ${line}`);
+}
+
+export function getBleLog(): string {
+  return bleLog.length > 0 ? bleLog.join('\n') : 'Журнал пуст';
+}
 
 function isSensorNeeded(): boolean {
   return useSessionStore.getState().activeWorkout !== null || useMonitoringStore.getState().status !== 'idle';
@@ -27,7 +44,10 @@ function handleMeasurement(value: string): void {
 
   const session = useSessionStore.getState();
   const contact = verdict.hasContact ? 'ok' : 'lost';
-  if (session.sensorContact !== contact) session.setSensorContact(contact);
+  if (session.sensorContact !== contact) {
+    logBle(verdict.hasContact ? 'skin contact ok' : `no skin contact (${verdict.reason})`);
+    session.setSensorContact(contact);
+  }
 
   if (!verdict.hasContact) {
     // The strap is not on the skin (or reads nothing): what it sends now is a
@@ -42,7 +62,10 @@ function handleMeasurement(value: string): void {
 
 function createSupervisor(): ConnectionSupervisor {
   return createConnectionSupervisor(bleLink, {
-    onStatus: (status) => useSessionStore.getState().setConnectionStatus(status),
+    onStatus: (status) => {
+      logBle(`status: ${status}`);
+      useSessionStore.getState().setConnectionStatus(status);
+    },
 
     onConnected: (target) => {
       if (contactDeviceId !== target.id) {
@@ -67,9 +90,7 @@ function createSupervisor(): ConnectionSupervisor {
 
     onValue: handleMeasurement,
     shouldReconnect: isSensorNeeded,
-    log: (message, error) => {
-      console.log(`[ble] ${message}`, error instanceof Error ? error.message : (error ?? ''));
-    },
+    log: logBle,
   });
 }
 
@@ -88,6 +109,14 @@ if (resumeTarget) supervisor.connect(resumeTarget).catch(() => {});
 // workout or monitoring is running the reconnect loop keeps trying regardless.
 export function connectAndSubscribe(deviceId: string, deviceName: string): Promise<void> {
   return supervisor.connect({ id: deviceId, name: deviceName });
+}
+
+// "Try again now" from the UI: skips the backoff wait of the reconnect loop.
+export function retryConnectionNow(): void {
+  const device = useSessionStore.getState().lastKnownDevice;
+  if (!device) return;
+  logBle('manual retry');
+  supervisor.connect(device).catch(() => {});
 }
 
 // Catches "silent" BLE drops where Android never reports a disconnect: if a

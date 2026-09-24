@@ -66,6 +66,8 @@ class FakeScheduler implements Scheduler {
 // device that is already connected cancels that connection first.
 class FakeLink implements BleLink {
   reachable = new Set<string>(['strap-1', 'strap-2']);
+  // Devices whose connect/discovery never answers (seen after an abrupt drop).
+  hanging = new Set<string>();
   connectedIds = new Set<string>();
   connectCalls: string[] = [];
   disconnectCalls: string[] = [];
@@ -82,6 +84,7 @@ class FakeLink implements BleLink {
     try {
       if (this.connectedIds.has(id)) await this.disconnect(id);
       await Promise.resolve();
+      if (this.hanging.has(id)) await new Promise<void>(() => {});
       if (!this.reachable.has(id)) {
         this.emitDisconnectEvent(id);
         throw new Error('Operation timed out');
@@ -433,6 +436,36 @@ describe('connection supervisor', () => {
     expect(link.listenerCount('strap-1')).toBe(0);
     expect(link.listenerCount('strap-2')).toBe(2);
     expect(supervisor.getTarget()).toEqual(OTHER);
+  });
+
+  it('abandons an attempt that never answers and keeps retrying', async () => {
+    const { link, scheduler, supervisor } = setup();
+    await supervisor.connect(STRAP);
+
+    link.hanging.add('strap-1');
+    link.drop('strap-1');
+    await scheduler.advance(90000);
+
+    // Without a deadline the first hung attempt would block every retry.
+    expect(link.connectCalls.length).toBeGreaterThanOrEqual(4);
+    expect(supervisor.isConnected()).toBe(false);
+    expect(scheduler.pendingTimers()).toBeGreaterThanOrEqual(1);
+
+    link.hanging.delete('strap-1');
+    await scheduler.advance(40000);
+    expect(supervisor.isConnected()).toBe(true);
+    expect(link.listenerCount()).toBe(2);
+  });
+
+  it('cancels what is left of a dropped link before connecting again', async () => {
+    const { link, scheduler, supervisor } = setup();
+    await supervisor.connect(STRAP);
+
+    link.drop('strap-1');
+    await scheduler.advance(2000);
+
+    expect(link.disconnectCalls).toEqual(['strap-1']);
+    expect(supervisor.isConnected()).toBe(true);
   });
 
   it('lets go of everything on dispose', async () => {

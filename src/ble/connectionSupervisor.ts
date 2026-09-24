@@ -63,6 +63,12 @@ export interface SupervisorOptions {
   retryDelayMs(failures: number): number;
   disconnectTimeoutMs: number;
   maxStaleThresholdMs: number;
+  // Hard cap on one whole attempt (connect + service discovery). ble-plx only
+  // times out the connection itself; a discovery that never answers after an
+  // abrupt drop would otherwise block the single-flight attempt forever.
+  attemptTimeoutMs: number;
+  // Cap on the "is it really down?" check done on a disconnect event.
+  isConnectedTimeoutMs: number;
 }
 
 // Quick retries for the first ~5 minutes (a strap that slipped usually comes
@@ -74,7 +80,11 @@ export const DEFAULT_SUPERVISOR_OPTIONS: SupervisorOptions = {
   retryDelayMs: (failures) => (failures > FAST_RETRY_ATTEMPTS ? 30000 : Math.min(1000 * Math.max(failures, 1), 5000)),
   disconnectTimeoutMs: 3000,
   maxStaleThresholdMs: 5 * 60 * 1000,
+  attemptTimeoutMs: 25000,
+  isConnectedTimeoutMs: 3000,
 };
+
+class AttemptTimeoutError extends Error {}
 
 const realScheduler: Scheduler = {
   setTimeout: (callback, ms) => setTimeout(callback, ms),
@@ -126,6 +136,9 @@ export function createConnectionSupervisor(
   let lastValueAt = 0;
   let staleRecoveries = 0;
   let disposed = false;
+  // Set when a link went down: cancel whatever the native side still holds for
+  // the device before the next connect, so a half-closed GATT can't block it.
+  let resetBeforeConnect = false;
 
   const log = (message: string, error?: unknown) => hooks.log?.(message, error);
 
@@ -172,6 +185,16 @@ export function createConnectionSupervisor(
     }
   }
 
+  function withDeadline<T>(promise: Promise<T>, ms: number, error: () => Error): Promise<T> {
+    let handle: unknown = null;
+    const deadline = new Promise<never>((_, reject) => {
+      handle = scheduler.setTimeout(() => reject(error()), ms);
+    });
+    return Promise.race([promise, deadline]).finally(() => {
+      if (handle !== null) scheduler.clearTimeout(handle);
+    });
+  }
+
   // Ends the current connection epoch: from here on nothing created for it
   // (listeners, monitor callbacks, a retry timer) may act any more.
   function endEpoch() {
@@ -202,7 +225,11 @@ export function createConnectionSupervisor(
       // attempt; only act when the device really is down.
       let stillUp = false;
       try {
-        stillUp = await link.isConnected(target.id);
+        stillUp = await withDeadline(
+          link.isConnected(target.id),
+          opts.isConnectedTimeoutMs,
+          () => new Error('isConnected timed out'),
+        );
       } catch {
         stillUp = false;
       }
@@ -215,28 +242,35 @@ export function createConnectionSupervisor(
 
     const lostTarget = target;
     endEpoch();
+    // Whatever the reason, the next attempt starts by cancelling what's left
+    // of this link natively (notifications may have died on a link that is up).
+    resetBeforeConnect = true;
     log(`link to ${lostTarget.name} lost (${reason})`, error);
     hooks.onLinkDown(lostTarget);
-
-    if (reason === 'monitor-error') {
-      // Notifications died but the link may still be up: reset it fully.
-      const myEpoch = epoch;
-      setStatus('reconnecting');
-      await disconnectCapped(lostTarget.id);
-      if (myEpoch !== epoch || connected || attempt) return;
-    }
     startRetryLoop();
   }
 
   async function attemptBody(current: LinkTarget, myEpoch: number): Promise<boolean> {
     removeSubscriptions();
+    if (resetBeforeConnect || failures > 0) {
+      resetBeforeConnect = false;
+      await disconnectCapped(current.id);
+      if (myEpoch !== epoch || disposed) return false;
+    }
+    log(`connecting to ${current.name}${failures > 0 ? ` (retry ${failures})` : ''}`);
     try {
-      await link.connect(current.id);
+      await withDeadline(
+        link.connect(current.id),
+        opts.attemptTimeoutMs,
+        () => new AttemptTimeoutError(`connection attempt took longer than ${opts.attemptTimeoutMs / 1000}s`),
+      );
     } catch (error) {
       if (myEpoch === epoch) {
         failures += 1;
         lastError = error;
         log(`connect to ${current.name} failed (attempt ${failures})`, error);
+        // A hung attempt is abandoned: cancel it natively so it can't linger.
+        if (error instanceof AttemptTimeoutError) resetBeforeConnect = true;
       }
       return false;
     }
@@ -276,6 +310,7 @@ export function createConnectionSupervisor(
     failures = 0;
     lastError = null;
     lastValueAt = scheduler.now();
+    log(`connected to ${current.name}`);
     hooks.onConnected(current);
     setStatus('connected');
     return true;

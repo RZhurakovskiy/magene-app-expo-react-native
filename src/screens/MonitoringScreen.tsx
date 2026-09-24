@@ -2,12 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GradientButton } from '../components/GradientButton';
 import { HeartRateChart } from '../components/HeartRateChart';
 import { StatTile } from '../components/StatTile';
-import { connectAndSubscribe } from '../ble/connectionManager';
+import { connectAndSubscribe, getBleLog, retryConnectionNow } from '../ble/connectionManager';
 import { getFlag, listMonitoringMinutesBetween, MonitoringMinute } from '../db/database';
 import { MONITORING_ONBOARDING_FLAG } from '../monitoring/flags';
 import { pauseMonitoring, resumeMonitoring, startMonitoring, stopMonitoring } from '../monitoring/monitoringController';
@@ -126,6 +126,10 @@ export function MonitoringScreen({ navigation }: Props) {
     }
   };
 
+  const shareBleLog = () => {
+    Share.share({ message: getBleLog() }).catch(() => {});
+  };
+
   const handleStop = async () => {
     setBusy(true);
     const finishedSessionId = useMonitoringStore.getState().sessionId;
@@ -153,7 +157,9 @@ export function MonitoringScreen({ navigation }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Суточный мониторинг</Text>
+        <Text style={styles.title} onLongPress={shareBleLog}>
+          Суточный мониторинг
+        </Text>
         <TouchableOpacity onPress={() => navigation.navigate('MonitoringHistory')}>
           <Ionicons name="time-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -170,13 +176,16 @@ export function MonitoringScreen({ navigation }: Props) {
       </View>
 
       {status !== 'idle' && connectionStatus !== 'connected' && (
-        <Text style={styles.connBanner}>
-          {connectionStatus === 'reconnecting'
-            ? 'Датчик потерян — переподключаемся…'
-            : connectionStatus === 'connecting'
-              ? 'Подключение к датчику…'
-              : 'Датчик отключён'}
-        </Text>
+        <TouchableOpacity onPress={retryConnectionNow} onLongPress={shareBleLog}>
+          <Text style={styles.connBanner}>
+            {connectionStatus === 'reconnecting'
+              ? 'Датчик потерян — переподключаемся…'
+              : connectionStatus === 'connecting'
+                ? 'Подключение к датчику…'
+                : 'Датчик отключён'}
+          </Text>
+          <Text style={styles.connHint}>Нажми, чтобы повторить сейчас · удерживай — журнал</Text>
+        </TouchableOpacity>
       )}
 
       {status !== 'idle' && connectionStatus === 'connected' && sensorContact === 'lost' && (
@@ -274,6 +283,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  connHint: {
+    color: colors.textMuted,
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    textAlign: 'center',
+    marginTop: 2,
   },
   bpmBlock: {
     alignItems: 'center',
