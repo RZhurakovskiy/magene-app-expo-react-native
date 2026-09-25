@@ -18,7 +18,7 @@ export interface TargetZoneRange {
   max: number;
 }
 
-interface ActiveWorkout {
+export interface ActiveWorkout {
   mode: WorkoutMode;
   startedAt: number;
   hrSamples: HrSample[];
@@ -41,6 +41,8 @@ interface SessionState {
   loadLastKnownDevice: () => Promise<void>;
 
   startWorkout: (mode: WorkoutMode, targetZoneRange: TargetZoneRange | null) => void;
+  // Bring back a workout that was running when the app was killed.
+  restoreWorkout: (workout: Omit<ActiveWorkout, 'currentBpm'>) => void;
   addHrSample: (bpm: number) => void;
   clearCurrentBpm: () => void;
   appendRoutePoint: (point: RoutePoint) => void;
@@ -74,6 +76,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         targetZoneRange,
       },
     }),
+
+  restoreWorkout: (workout) => set({ activeWorkout: { ...workout, currentBpm: null } }),
 
   addHrSample: (bpm) => {
     const workout = get().activeWorkout;

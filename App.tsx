@@ -8,16 +8,21 @@ import {
 } from '@expo-google-fonts/manrope';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { Preloader } from './src/components/Preloader';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import './src/location/backgroundLocation';
 import './src/monitoring/foregroundService';
 import { closeDanglingSessions, initDatabase } from './src/db/database';
+import { restoreWorkoutDraft, startWorkoutDraftAutosave } from './src/workout/workoutDraft';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { useProfileStore } from './src/store/profileStore';
 import { useSessionStore } from './src/store/sessionStore';
 import { colors } from './src/theme';
+
+// Keep the start screen up at least this long so it reads as a screen, not a flicker.
+const MIN_PRELOADER_MS = 1400;
 
 const navigationTheme = {
   ...DarkTheme,
@@ -26,6 +31,7 @@ const navigationTheme = {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [minTimePassed, setMinTimePassed] = useState(false);
   const [fontsLoaded] = useFonts({
     Manrope_400Regular,
     Manrope_500Medium,
@@ -38,11 +44,33 @@ export default function App() {
 
   useEffect(() => {
     initDatabase()
-      .then(() => Promise.all([loadProfile(), loadLastKnownDevice(), closeDanglingSessions().catch(() => {})]))
-      .finally(() => setReady(true));
+      .then(() =>
+        Promise.all([
+          loadProfile(),
+          loadLastKnownDevice(),
+          closeDanglingSessions().catch(() => {}),
+          restoreWorkoutDraft().catch(() => false),
+        ]),
+      )
+      .finally(() => {
+        startWorkoutDraftAutosave();
+        setReady(true);
+      });
   }, [loadProfile, loadLastKnownDevice]);
 
-  if (!ready || !fontsLoaded) return null;
+  useEffect(() => {
+    const timer = setTimeout(() => setMinTimePassed(true), MIN_PRELOADER_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!ready || !fontsLoaded || !minTimePassed) {
+    return (
+      <>
+        <Preloader fontsReady={fontsLoaded} />
+        <StatusBar style="light" />
+      </>
+    );
+  }
 
   return (
     <SafeAreaProvider>

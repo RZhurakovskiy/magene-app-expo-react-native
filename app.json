@@ -71,7 +71,8 @@
       "expo-font",
       "@maplibre/maplibre-react-native",
       "expo-sharing",
-      "./plugins/withNotifeeForegroundServiceType"
+      "./plugins/withNotifeeForegroundServiceType",
+      "expo-splash-screen"
     ],
     "extra": {
       "eas": {

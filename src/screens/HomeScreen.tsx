@@ -8,6 +8,7 @@ import { GradientButton } from '../components/GradientButton';
 import { ModeSelector } from '../components/ModeToggle';
 import { TargetZonePicker, TargetZoneRange } from '../components/TargetZonePicker';
 import { requestLocationPermissions, startOutdoorTracking } from '../location/backgroundLocation';
+import { beginWorkoutService } from '../workout/workoutService';
 import { RootStackParamList } from '../navigation/types';
 import { useProfileStore } from '../store/profileStore';
 import { useSessionStore } from '../store/sessionStore';
@@ -46,6 +47,14 @@ export function HomeScreen({ navigation }: Props) {
     }
   }, [connectionStatus, lastKnownDevice]);
 
+  // A workout restored after the app was killed: go straight back to it.
+  const hasActiveWorkout = useSessionStore((s) => s.activeWorkout !== null);
+  useEffect(() => {
+    if (!hasActiveWorkout) return;
+    beginWorkoutService();
+    navigation.navigate('ActiveWorkout');
+  }, [hasActiveWorkout, navigation]);
+
   const handleQuickReconnect = async () => {
     if (!lastKnownDevice) return;
     setReconnecting(true);
@@ -69,6 +78,7 @@ export function HomeScreen({ navigation }: Props) {
         }
         await startOutdoorTracking();
       }
+      await beginWorkoutService();
       startWorkout(mode, targetZoneRange);
       navigation.navigate('ActiveWorkout');
     } finally {

@@ -62,6 +62,11 @@ export async function initDatabase(): Promise<void> {
       avg_hrv_ms INTEGER,
       has_rr INTEGER
     );
+    CREATE TABLE IF NOT EXISTS workout_draft (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      data TEXT NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS app_flags (
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
@@ -97,6 +102,27 @@ export async function setFlag(key: string, value: string): Promise<void> {
     'INSERT INTO app_flags (key, value) VALUES ($key, $value) ON CONFLICT(key) DO UPDATE SET value = $value',
     { $key: key, $value: value },
   );
+}
+
+// The running workout, rewritten every few seconds so a killed app can resume it.
+export async function saveWorkoutDraft(data: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync(
+    `INSERT INTO workout_draft (id, data, updated_at) VALUES (1, $data, $now)
+     ON CONFLICT(id) DO UPDATE SET data = $data, updated_at = $now`,
+    { $data: data, $now: Date.now() },
+  );
+}
+
+export async function loadWorkoutDraft(): Promise<string | null> {
+  const db = await getDb();
+  const row = await db.getFirstAsync<{ data: string }>('SELECT data FROM workout_draft WHERE id = 1');
+  return row?.data ?? null;
+}
+
+export async function clearWorkoutDraft(): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('DELETE FROM workout_draft WHERE id = 1');
 }
 
 export interface KnownDeviceRecord {

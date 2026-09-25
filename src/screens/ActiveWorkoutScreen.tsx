@@ -20,6 +20,8 @@ import { generateId } from '../utils/id';
 import { paceSecPerKm, totalRouteDistanceMeters } from '../utils/geo';
 import { estimateMaxHr, getHrZone, NO_ZONE_COLOR } from '../utils/heartRateZones';
 import { insertSession } from '../db/database';
+import { discardWorkoutDraft } from '../workout/workoutDraft';
+import { endWorkoutService } from '../workout/workoutService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ActiveWorkout'>;
 
@@ -118,7 +120,9 @@ export function ActiveWorkoutScreen({ navigation }: Props) {
       };
 
       await insertSession(session);
+      await discardWorkoutDraft();
       endWorkout();
+      endWorkoutService();
       navigation.replace('WorkoutSummary', { session });
     } finally {
       setFinishing(false);

@@ -4,6 +4,7 @@ import { useSessionStore } from '../store/sessionStore';
 import {
   requestNotificationPermission,
   startMonitoringForegroundService,
+  startWorkoutForegroundService,
   stopMonitoringForegroundService,
   updateMonitoringNotification,
 } from './foregroundService';
@@ -88,5 +89,10 @@ export function resumeMonitoring(): void {
 export async function stopMonitoring(): Promise<void> {
   clearTimers();
   await useMonitoringStore.getState().stop();
+  if (useSessionStore.getState().activeWorkout) {
+    // A workout still needs the foreground service: hand it back to it.
+    await startWorkoutForegroundService().catch(() => {});
+    return;
+  }
   await stopMonitoringForegroundService().catch(() => {});
 }
